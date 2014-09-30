@@ -1,9 +1,5 @@
 package org.odata4j.format.xml;
 
-import java.io.Writer;
-
-import javax.ws.rs.core.UriInfo;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.odata4j.core.ODataConstants;
@@ -15,6 +11,9 @@ import org.odata4j.producer.EntitiesResponse;
 import org.odata4j.stax2.QName2;
 import org.odata4j.stax2.XMLFactoryProvider2;
 import org.odata4j.stax2.XMLWriter2;
+
+import javax.ws.rs.core.UriInfo;
+import java.io.Writer;
 
 public class AtomFeedFormatWriter extends XmlFormatWriter implements FormatWriter<EntitiesResponse> {
 
@@ -37,8 +36,8 @@ public class AtomFeedFormatWriter extends XmlFormatWriter implements FormatWrite
     writer.startDocument();
 
     writer.startElement(new QName2("feed"), atom);
-    writer.writeNamespace("m", m);
     writer.writeNamespace("d", d);
+    writer.writeNamespace("m", m);
     writer.writeAttribute("xml:base", baseUri);
 
     writeElement(writer, "title", entitySetName, "type", "text");
