@@ -4,6 +4,7 @@ import org.odata4j.core.Guid;
 import org.odata4j.core.ODataConstants;
 import org.odata4j.core.ODataVersion;
 import org.odata4j.core.OEntity;
+import org.odata4j.edm.EdmDataServices;
 import org.odata4j.format.FormatWriter;
 import org.odata4j.format.FormatWriterFactory;
 import org.odata4j.internal.InternalUtil;
@@ -22,6 +23,7 @@ import java.util.logging.Logger;
 public class EntitiesRequestResource extends BaseResource {
 
   private static final Logger log = Logger.getLogger(EntitiesRequestResource.class.getName());
+  private static final String POSSIBLE_FUNCTION_NAME_SUFFIX = "()";
 
   @POST
   @Produces({ ODataConstants.APPLICATION_ATOM_XML_CHARSET_UTF8, ODataConstants.TEXT_JAVASCRIPT_CHARSET_UTF8, ODataConstants.APPLICATION_JAVASCRIPT_CHARSET_UTF8 })
@@ -202,8 +204,14 @@ public class EntitiesRequestResource extends BaseResource {
 
     // the OData URI scheme makes it impossible to have unique @Paths that refer
     // to functions and entity sets
-    if (producer.getMetadata().findEdmFunctionImport(entitySetName) != null) {
+    final EdmDataServices metadata = producer.getMetadata();
+    if (metadata.findEdmFunctionImport(entitySetName) != null) {
       return FunctionResource.callFunction(httpHeaders, uriInfo, producer, entitySetName, format, callback, skipToken);
+    } else if(entitySetName.endsWith(POSSIBLE_FUNCTION_NAME_SUFFIX)) {
+      final String normalisedFunctionImportName = entitySetName.substring(0, entitySetName.length() - 2);
+      if (metadata.findEdmFunctionImport(normalisedFunctionImportName) != null) {
+        return FunctionResource.callFunction(httpHeaders, uriInfo, producer, normalisedFunctionImportName, format, callback, skipToken);
+      }
     }
 
     QueryInfo query = new QueryInfo(
