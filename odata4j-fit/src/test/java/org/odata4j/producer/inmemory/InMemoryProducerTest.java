@@ -275,8 +275,8 @@ public class InMemoryProducerTest {
     }
 
     @Override
-    public String getAtomEntitySource() {
-      return "somewhere";
+    public String getAtomEntitySource(String x) {
+      return x + "somewhere";
     }
   }
 

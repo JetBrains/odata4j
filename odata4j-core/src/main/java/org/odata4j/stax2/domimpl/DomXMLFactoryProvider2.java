@@ -1,34 +1,23 @@
 package org.odata4j.stax2.domimpl;
 
-import java.io.Reader;
-import java.io.Writer;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.core4j.ReadOnlyIterator;
 import org.odata4j.core.Throwables;
 import org.odata4j.internal.PlatformUtil;
-import org.odata4j.stax2.Attribute2;
-import org.odata4j.stax2.EndElement2;
-import org.odata4j.stax2.QName2;
-import org.odata4j.stax2.StartElement2;
-import org.odata4j.stax2.XMLEvent2;
-import org.odata4j.stax2.XMLEventReader2;
-import org.odata4j.stax2.XMLEventWriter2;
-import org.odata4j.stax2.XMLFactoryProvider2;
-import org.odata4j.stax2.XMLInputFactory2;
-import org.odata4j.stax2.XMLOutputFactory2;
-import org.odata4j.stax2.XMLWriter2;
-import org.odata4j.stax2.XMLWriterFactory2;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.odata4j.stax2.*;
+import org.w3c.dom.*;
 import org.xml.sax.InputSource;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.Reader;
+import java.io.Writer;
+
 public class DomXMLFactoryProvider2 extends XMLFactoryProvider2 {
+
+  public DomXMLFactoryProvider2() {
+    //check it's possible to use xml dom.
+    DocumentBuilderFactory.newInstance();
+  }
 
   @Override
   public XMLInputFactory2 newXMLInputFactory2() {

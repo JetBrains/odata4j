@@ -1,25 +1,10 @@
 package org.odata4j.format.xml;
 
-import java.util.Iterator;
-import java.util.List;
-
-import javax.ws.rs.core.MediaType;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
-import org.odata4j.core.OAtomEntity;
-import org.odata4j.core.OAtomStreamEntity;
-import org.odata4j.core.OCollection;
-import org.odata4j.core.OComplexObject;
-import org.odata4j.core.OEntity;
-import org.odata4j.core.OLink;
-import org.odata4j.core.OObject;
-import org.odata4j.core.OProperty;
-import org.odata4j.core.ORelatedEntitiesLinkInline;
-import org.odata4j.core.ORelatedEntityLinkInline;
-import org.odata4j.core.OSimpleObject;
+import org.odata4j.core.*;
 import org.odata4j.edm.EdmCollectionType;
 import org.odata4j.edm.EdmEntitySet;
 import org.odata4j.edm.EdmSimpleType;
@@ -28,6 +13,10 @@ import org.odata4j.internal.InternalUtil;
 import org.odata4j.repack.org.apache.commons.codec.binary.Base64;
 import org.odata4j.stax2.QName2;
 import org.odata4j.stax2.XMLWriter2;
+
+import javax.ws.rs.core.MediaType;
+import java.util.Iterator;
+import java.util.List;
 
 public class XmlFormatWriter {
 
@@ -298,7 +287,7 @@ public class XmlFormatWriter {
         hasStream = true;
         writer.startElement("content");
         writer.writeAttribute("type", stream.getAtomEntityType());
-        writer.writeAttribute("src", baseUri + stream.getAtomEntitySource());
+        writer.writeAttribute("src", stream.getAtomEntitySource(baseUri));
         writer.endElement("content");
       }
     }
@@ -309,6 +298,10 @@ public class XmlFormatWriter {
     }
 
     writer.startElement(new QName2(m, "properties", "m"));
+    if (hasStream) {
+      writer.writeNamespace("m", m);
+      writer.writeNamespace("d", d);
+    }
     writeProperties(writer, entityProperties);
     writer.endElement("properties");
 

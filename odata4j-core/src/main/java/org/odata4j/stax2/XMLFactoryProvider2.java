@@ -1,27 +1,45 @@
 package org.odata4j.stax2;
 
-import org.odata4j.core.Throwables;
 import org.odata4j.internal.PlatformUtil;
+import java.util.logging.Logger;
 
 public abstract class XMLFactoryProvider2 {
+  public static final String XML_PULL_FACTORY = "org.odata4j.stax2.xppimpl.XmlPullXMLFactoryProvider2";
+  public static final String XML_STAX_FACTORY = "org.odata4j.stax2.staximpl.StaxXMLFactoryProvider2";
+  public static final String XML_DOM_FACTORY = "org.odata4j.stax2.domimpl.DomXMLFactoryProvider2";
+  private static XMLFactoryProvider2 ourFactory;
 
-  private static XMLFactoryProvider2 STAX;
-
-  static {
+  private static XMLFactoryProvider2 tryLoadClass(String clazz) {
     try {
-      String clazz = PlatformUtil.runningOnAndroid() ? "org.odata4j.stax2.xppimpl.XmlPullXMLFactoryProvider2" : "org.odata4j.stax2.staximpl.StaxXMLFactoryProvider2";
-      STAX = (XMLFactoryProvider2) Class.forName(clazz).newInstance();
-    } catch (Exception e) {
-      throw Throwables.propagate(e);
+      return (XMLFactoryProvider2) Class.forName(clazz).newInstance();
+    } catch (Throwable t) {
+      Logger.getLogger(XMLFactoryProvider2.class.getName()).fine("Failed to create instance of " + clazz + ". " + t.getMessage());
+      return null;
     }
   }
 
   public static void setInstance(XMLFactoryProvider2 instance) {
-    STAX = instance;
+    ourFactory = instance;
   }
 
   public static XMLFactoryProvider2 getInstance() {
-    return STAX;
+    if (!PlatformUtil.runningOnAndroid()) {
+      if (ourFactory == null) {
+        ourFactory = tryLoadClass(XML_DOM_FACTORY);
+      }
+      if (ourFactory == null) {
+        ourFactory = tryLoadClass(XML_STAX_FACTORY);
+      }
+    }
+
+    if (ourFactory == null) {
+      ourFactory = tryLoadClass(XML_PULL_FACTORY);
+    }
+
+    if (ourFactory == null) {
+      throw new RuntimeException("Failed to load XmlFactoryProvider");
+    }
+    return ourFactory;
   }
 
   public abstract XMLOutputFactory2 newXMLOutputFactory2();

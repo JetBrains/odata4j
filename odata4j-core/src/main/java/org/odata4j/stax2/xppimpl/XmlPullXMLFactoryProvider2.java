@@ -1,27 +1,24 @@
 package org.odata4j.stax2.xppimpl;
 
-import java.io.Reader;
-import java.io.Writer;
-
 import org.odata4j.core.Throwables;
-import org.odata4j.stax2.Attribute2;
-import org.odata4j.stax2.EndElement2;
-import org.odata4j.stax2.QName2;
-import org.odata4j.stax2.StartElement2;
-import org.odata4j.stax2.XMLEvent2;
-import org.odata4j.stax2.XMLEventReader2;
-import org.odata4j.stax2.XMLEventWriter2;
-import org.odata4j.stax2.XMLFactoryProvider2;
-import org.odata4j.stax2.XMLInputFactory2;
-import org.odata4j.stax2.XMLOutputFactory2;
-import org.odata4j.stax2.XMLWriter2;
-import org.odata4j.stax2.XMLWriterFactory2;
+import org.odata4j.stax2.*;
 import org.odata4j.stax2.domimpl.ManualXMLWriter2;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import java.io.Reader;
+import java.io.Writer;
+
 public class XmlPullXMLFactoryProvider2 extends XMLFactoryProvider2 {
+
+  public XmlPullXMLFactoryProvider2() {
+    try {
+      XmlPullParserFactory.newInstance();
+    } catch (XmlPullParserException e) {
+      throw new RuntimeException("Failed to create XmlPullParserFactory");
+    }
+  }
 
   @Override
   public XMLInputFactory2 newXMLInputFactory2() {
