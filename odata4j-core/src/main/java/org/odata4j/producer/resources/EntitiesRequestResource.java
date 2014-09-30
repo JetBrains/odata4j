@@ -1,26 +1,5 @@
 package org.odata4j.producer.resources;
 
-import java.io.StringWriter;
-import java.net.URI;
-import java.util.List;
-import java.util.logging.Logger;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.ContextResolver;
-
 import org.odata4j.core.Guid;
 import org.odata4j.core.ODataConstants;
 import org.odata4j.core.ODataVersion;
@@ -28,11 +7,16 @@ import org.odata4j.core.OEntity;
 import org.odata4j.format.FormatWriter;
 import org.odata4j.format.FormatWriterFactory;
 import org.odata4j.internal.InternalUtil;
-import org.odata4j.producer.CountResponse;
-import org.odata4j.producer.EntitiesResponse;
-import org.odata4j.producer.EntityResponse;
-import org.odata4j.producer.ODataProducer;
-import org.odata4j.producer.QueryInfo;
+import org.odata4j.producer.*;
+
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.ext.ContextResolver;
+import java.io.StringWriter;
+import java.net.URI;
+import java.util.List;
+import java.util.logging.Logger;
 
 @Path("{entitySetName}")
 public class EntitiesRequestResource extends BaseResource {
@@ -81,6 +65,7 @@ public class EntitiesRequestResource extends BaseResource {
   @GET
   @Produces({ ODataConstants.APPLICATION_ATOM_XML_CHARSET_UTF8,
       ODataConstants.TEXT_JAVASCRIPT_CHARSET_UTF8,
+      ODataConstants.TEXT_PLAIN_CHARSET_UTF8,
       ODataConstants.APPLICATION_JAVASCRIPT_CHARSET_UTF8 })
   public Response getEntities(
       @Context HttpHeaders httpHeaders,
