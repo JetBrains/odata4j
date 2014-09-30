@@ -1,17 +1,12 @@
 package org.odata4j.producer.resources;
 
+import org.odata4j.expression.*;
+import org.odata4j.producer.InlineCount;
+
+import javax.ws.rs.core.UriInfo;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.core.UriInfo;
-
-import org.odata4j.expression.BoolCommonExpression;
-import org.odata4j.expression.CommonExpression;
-import org.odata4j.expression.EntitySimpleProperty;
-import org.odata4j.expression.ExpressionParser;
-import org.odata4j.expression.OrderByExpression;
-import org.odata4j.producer.InlineCount;
 
 public class OptionsQueryParser {
 
@@ -39,7 +34,7 @@ public class OptionsQueryParser {
     }
     CommonExpression ce = ExpressionParser.parse(filter);
     if (!(ce instanceof BoolCommonExpression)) {
-      throw new RuntimeException("Bad filter");
+      throw new RuntimeException("Bad filter: " + filter);
     }
     return (BoolCommonExpression) ce;
   }
