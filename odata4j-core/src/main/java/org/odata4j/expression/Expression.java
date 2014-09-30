@@ -639,7 +639,7 @@ public class Expression {
     }
   }
 
-  private static class EntitySimplePropertyImpl extends ExpressionImpl implements EntitySimpleProperty {
+  private static class EntitySimplePropertyImpl extends ExpressionImpl implements EntitySimpleProperty, BoolCommonExpression {
     private final String propertyName;
 
     protected EntitySimplePropertyImpl(String propertyName) {

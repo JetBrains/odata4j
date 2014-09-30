@@ -1,9 +1,6 @@
 package org.odata4j.producer.inmemory;
 
-import java.util.List;
-
 import junit.framework.Assert;
-
 import org.core4j.Enumerable;
 import org.core4j.Func;
 import org.core4j.Func1;
@@ -15,12 +12,10 @@ import org.odata4j.edm.EdmEntitySet;
 import org.odata4j.edm.EdmProperty;
 import org.odata4j.expression.BoolCommonExpression;
 import org.odata4j.expression.Expression;
-import org.odata4j.producer.CountResponse;
-import org.odata4j.producer.EntitiesResponse;
-import org.odata4j.producer.EntityQueryInfo;
-import org.odata4j.producer.InlineCount;
-import org.odata4j.producer.QueryInfo;
+import org.odata4j.producer.*;
 import org.odata4j.producer.resources.OptionsQueryParser;
+
+import java.util.List;
 
 @SuppressWarnings("unused")
 public class InMemoryProducerTest {
@@ -122,7 +117,7 @@ public class InMemoryProducerTest {
     });
 
     QueryInfo qi = new QueryInfo(InlineCount.ALLPAGES, null, null,
-        OptionsQueryParser.parseFilter("(Foo ne null) and substringof('common',tolower(Foo))"), null, null, null, null, null);
+            OptionsQueryParser.parseFilter("(Foo ne null) and substringof('common',tolower(Foo))"), null, null, null, null, null);
     EntitiesResponse data = producer.getEntities("TestData", qi);
     Assert.assertEquals(data.getEntities().size(), 2);
   }
@@ -210,6 +205,39 @@ public class InMemoryProducerTest {
       }
     }
     Assert.assertTrue("There should be keys", found);
+  }
+
+  @Test
+  public void boolPropertyQuery() {
+    class Entry {
+      public boolean getFoo() {
+        return true;
+      }
+
+      public int getId() {
+        return System.identityHashCode(this);
+      }
+    }
+
+    final InMemoryProducer producer = new InMemoryProducer("aaa");
+    final List<Entry> testData = Enumerable.create(new Entry(), new Entry()).toList();
+    Func<Iterable<Entry>> getTestData = new Func<Iterable<Entry>>() {
+      @Override
+      public Iterable<Entry> apply() {
+        // worst case - a one shot iterable
+        return Enumerable.createFromIterator(Funcs.constant(testData.iterator()));
+      }
+    };
+    producer.register(Entry.class, Integer.class, "TestData", getTestData, new Func1<Entry, Integer>() {
+      @Override
+      public Integer apply(Entry entry) {
+        return entry.getId();
+      }
+    });
+
+    QueryInfo qi = new QueryInfo(InlineCount.ALLPAGES, null, null, OptionsQueryParser.parseFilter("Foo"), null, null, null, null, null);
+    final EntitiesResponse data = producer.getEntities("TestData", qi);
+    Assert.assertEquals(data.getEntities().size(), 2);
   }
 
   private static class SimpleEntity {

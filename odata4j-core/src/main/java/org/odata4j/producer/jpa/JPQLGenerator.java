@@ -1,47 +1,11 @@
 package org.odata4j.producer.jpa;
 
-import java.sql.Timestamp;
-
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
-import org.odata4j.expression.AddExpression;
-import org.odata4j.expression.AndExpression;
-import org.odata4j.expression.BinaryCommonExpression;
-import org.odata4j.expression.BoolCommonExpression;
-import org.odata4j.expression.BoolParenExpression;
-import org.odata4j.expression.BooleanLiteral;
-import org.odata4j.expression.CommonExpression;
-import org.odata4j.expression.ConcatMethodCallExpression;
-import org.odata4j.expression.DayMethodCallExpression;
-import org.odata4j.expression.DivExpression;
-import org.odata4j.expression.EndsWithMethodCallExpression;
-import org.odata4j.expression.EntitySimpleProperty;
-import org.odata4j.expression.EqExpression;
-import org.odata4j.expression.GeExpression;
-import org.odata4j.expression.GtExpression;
-import org.odata4j.expression.IndexOfMethodCallExpression;
-import org.odata4j.expression.IsofExpression;
-import org.odata4j.expression.LeExpression;
-import org.odata4j.expression.LengthMethodCallExpression;
-import org.odata4j.expression.LiteralExpression;
-import org.odata4j.expression.LtExpression;
-import org.odata4j.expression.ModExpression;
-import org.odata4j.expression.MulExpression;
-import org.odata4j.expression.NeExpression;
-import org.odata4j.expression.NotExpression;
-import org.odata4j.expression.NullLiteral;
-import org.odata4j.expression.OrExpression;
-import org.odata4j.expression.ParenExpression;
-import org.odata4j.expression.ReplaceMethodCallExpression;
-import org.odata4j.expression.RoundMethodCallExpression;
-import org.odata4j.expression.StartsWithMethodCallExpression;
-import org.odata4j.expression.SubExpression;
-import org.odata4j.expression.SubstringMethodCallExpression;
-import org.odata4j.expression.SubstringOfMethodCallExpression;
-import org.odata4j.expression.ToLowerMethodCallExpression;
-import org.odata4j.expression.ToUpperMethodCallExpression;
-import org.odata4j.expression.TrimMethodCallExpression;
+import org.odata4j.expression.*;
+
+import java.sql.Timestamp;
 
 public class JPQLGenerator {
 
@@ -79,9 +43,6 @@ public class JPQLGenerator {
 
   public String toJpql(CommonExpression expression) {
 
-    if (expression instanceof BoolCommonExpression)
-      return toJpql((BoolCommonExpression) expression);
-
     if (expression instanceof EntitySimpleProperty) {
       String field = ((EntitySimpleProperty) expression).getPropertyName();
 
@@ -91,6 +52,9 @@ public class JPQLGenerator {
 
       return tableAlias + "." + field;
     }
+
+    if (expression instanceof BoolCommonExpression)
+      return toJpql((BoolCommonExpression) expression);
 
     if (expression instanceof NullLiteral || expression == null)
       return null;
