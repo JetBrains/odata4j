@@ -25,10 +25,10 @@ public abstract class XMLFactoryProvider2 {
   public static XMLFactoryProvider2 getInstance() {
     if (!PlatformUtil.runningOnAndroid()) {
       if (ourFactory == null) {
-        ourFactory = tryLoadClass(XML_DOM_FACTORY);
+        ourFactory = tryLoadClass(XML_STAX_FACTORY);
       }
       if (ourFactory == null) {
-        ourFactory = tryLoadClass(XML_STAX_FACTORY);
+        ourFactory = tryLoadClass(XML_DOM_FACTORY);
       }
     }
 
