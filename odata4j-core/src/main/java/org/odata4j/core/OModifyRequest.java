@@ -1,5 +1,7 @@
 package org.odata4j.core;
 
+import org.odata4j.exceptions.ODataProducerException;
+
 /**
  * A consumer-side modification-request builder, used for operations such as MERGE and UPDATE.  Call {@link #execute()} to issue the request.
  *
@@ -8,33 +10,33 @@ package org.odata4j.core;
 public interface OModifyRequest<T> {
 
   /**
-    * Set properties on the new entity.
-    * 
-    * @param props  the properties
-    * @return the modification-request builder 
-    */
+   * Sets properties on the new entity.
+   *
+   * @param props  the properties
+   * @return the modification-request builder
+   */
   OModifyRequest<T> properties(OProperty<?>... props);
 
   /**
-   * Set properties on the new entity.
-   * 
+   * Sets properties on the new entity.
+   *
    * @param props  the properties
-   * @return the modification-request builder 
+   * @return the modification-request builder
    */
   OModifyRequest<T> properties(Iterable<OProperty<?>> props);
 
   /**
-  * Define an explicit link to another related entity.
-  * 
-  * @param navProperty  the entity's relationship navigation property
-  * @param target  the link target entity
-  * @return the modification-request builder
-  */
+   * Defines an explicit link to another related entity.
+   *
+   * @param navProperty  the entity's relationship navigation property
+   * @param target  the link target entity
+   * @return the modification-request builder
+   */
   OModifyRequest<T> link(String navProperty, OEntity target);
 
   /**
-   * Define an explicit link to another related entity.
-   * 
+   * Defines an explicit link to another related entity.
+   *
    * @param navProperty  the entity's relationship navigation property
    * @param targetKey  the key of the link target entity
    * @return the modification-request builder
@@ -42,19 +44,29 @@ public interface OModifyRequest<T> {
   OModifyRequest<T> link(String navProperty, OEntityKey targetKey);
 
   /**
-  * Sends the modification-request to the OData service and returns success or failure.
-  * 
-  * @return success or failure
-  */
-  boolean execute();
+   * Sends the modification request to the OData service.
+   *
+   * @throws ODataProducerException  error from the producer
+   */
+  void execute() throws ODataProducerException;
 
   /**
-   * Select a new modification entity by navigating to a referenced entity in a child collection.
-   * 
+   * Selects a new modification entity by navigating to a referenced entity in a child collection.
+   *
    * @param navProperty  the child collection
    * @param key  the referenced entity's key
    * @return the modification-request builder
    */
   OModifyRequest<T> nav(String navProperty, OEntityKey key);
+
+  /**
+   * Overrides the If-Match precondition.
+   *
+   * <p>The If-Match header will default to the entity-tag of the entity used to start the builder sequence.</p>
+   *
+   * @param precondition  <code>null</code>, an entity-tag, or <code>*</code>
+   * @return the modification-request builder
+   */
+  OModifyRequest<T> ifMatch(String precondition);
 
 }

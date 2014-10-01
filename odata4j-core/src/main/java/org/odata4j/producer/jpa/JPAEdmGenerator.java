@@ -4,11 +4,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -32,7 +28,6 @@ import javax.persistence.metamodel.Type.PersistenceType;
 
 import org.core4j.Enumerable;
 import org.core4j.Predicate1;
-import org.joda.time.Instant;
 import org.odata4j.core.OFuncs;
 import org.odata4j.core.OPredicates;
 import org.odata4j.edm.EdmAssociation;
@@ -65,16 +60,24 @@ public class JPAEdmGenerator implements EdmGenerator {
     this.namespace = namespace;
   }
 
+  protected EntityManagerFactory getEntityManagerFactory() {
+    return emf;
+  }
+
+  protected String getNamespace() {
+    return namespace;
+  }
+
   protected String getEntityContainerName() {
-    return namespace + "Entities";
+    return getNamespace() + "Entities";
   }
 
   protected String getModelSchemaNamespace() {
-    return namespace + "Model";
+    return getNamespace() + "Model";
   }
 
   protected String getContainerSchemaNamespace() {
-    return namespace + "Container";
+    return getNamespace() + "Container";
   }
 
   @Override
@@ -89,7 +92,7 @@ public class JPAEdmGenerator implements EdmGenerator {
     List<EdmEntitySet.Builder> entitySets = new ArrayList<EdmEntitySet.Builder>();
     List<EdmAssociationSet.Builder> associationSets = new ArrayList<EdmAssociationSet.Builder>();
 
-    Metamodel mm = emf.getMetamodel();
+    Metamodel mm = getEntityManagerFactory().getMetamodel();
 
     // complex types
     for (EmbeddableType<?> et : mm.getEmbeddables()) {
@@ -238,36 +241,17 @@ public class JPAEdmGenerator implements EdmGenerator {
   }
 
   protected EdmSimpleType<?> toEdmType(SingularAttribute<?, ?> sa) {
-
     Class<?> javaType = sa.getType().getJavaType();
 
-    if (javaType.equals(Date.class) || javaType.equals(Calendar.class)) {
+    EdmSimpleType<?> type = EdmSimpleType.forJavaType(javaType);
+    if (type == EdmSimpleType.DATETIME) {
       TemporalType temporal = getTemporalType(sa);
-      if (temporal == null) {
-        return EdmSimpleType.DATETIME;
-      } else {
-        switch (temporal) {
-        case DATE:
-        case TIMESTAMP:
-          return EdmSimpleType.DATETIME;
-        case TIME:
-          return EdmSimpleType.TIME;
-        }
-      }
-    }
-    if (javaType.equals(Time.class)) {
-      return EdmSimpleType.TIME;
-    }
-    if (javaType.equals(Instant.class)) {
-      return EdmSimpleType.DATETIME;
-    }
-    if (javaType.equals(Timestamp.class)) {
-      return EdmSimpleType.DATETIME;
+      if (temporal != null && temporal == TemporalType.TIME)
+        type = EdmSimpleType.TIME;
     }
 
-    EdmSimpleType<?> rt = EdmSimpleType.forJavaType(javaType);
-    if (rt != null)
-      return rt;
+    if (type != null)
+      return type;
 
     throw new UnsupportedOperationException(javaType.toString());
   }
@@ -277,7 +261,7 @@ public class JPAEdmGenerator implements EdmGenerator {
     EdmType type;
     if (sa.getPersistentAttributeType() == PersistentAttributeType.EMBEDDED) {
       String simpleName = sa.getJavaType().getSimpleName();
-      // this will map to an edm complex.  If anyone ever im;plements this you
+      // this will map to an edm complex.  If anyone ever implements this you
       // should not create an EdmComplexType.  Instead, you should maintain
       // a cache of EdmComplexType.Builders and re-use instances with the same
       // namespace.name.  (multiple Entity classes may have properties of this
@@ -295,8 +279,11 @@ public class JPAEdmGenerator implements EdmGenerator {
     Integer maxLength = null;
     if (sa.getJavaMember() instanceof AnnotatedElement) {
       Column col = ((AnnotatedElement) sa.getJavaMember()).getAnnotation(Column.class);
-      if (col != null && Enumerable.<EdmType> create(EdmSimpleType.BINARY, EdmSimpleType.STRING).contains(type))
-        maxLength = col.length();
+      if (col != null) {
+        if (Enumerable.<EdmType> create(EdmSimpleType.BINARY, EdmSimpleType.STRING).contains(type))
+          maxLength = col.length();
+        nullable &= col.nullable();
+      }
     }
 
     return EdmProperty.newBuilder(name).setType(type).setNullable(nullable).setMaxLength(maxLength);

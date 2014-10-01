@@ -6,47 +6,46 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
-import java.util.List;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response.StatusType;
 
 import org.core4j.Enumerable;
 import org.core4j.xml.XDocument;
 import org.core4j.xml.XmlFormat;
 import org.odata4j.consumer.AbstractODataClient;
 import org.odata4j.consumer.ODataClientRequest;
+import org.odata4j.consumer.ODataClientResponse;
 import org.odata4j.consumer.ODataConsumer;
 import org.odata4j.consumer.behaviors.OClientBehavior;
 import org.odata4j.consumer.behaviors.OClientBehaviors;
 import org.odata4j.core.ODataConstants;
-import org.odata4j.core.OEntities;
-import org.odata4j.core.OEntity;
-import org.odata4j.core.OEntityKey;
-import org.odata4j.core.OLink;
-import org.odata4j.core.OProperty;
+import org.odata4j.core.ODataConstants.Charsets;
+import org.odata4j.core.OError;
 import org.odata4j.core.Throwables;
-import org.odata4j.edm.EdmDataServices;
-import org.odata4j.edm.EdmEntitySet;
+import org.odata4j.exceptions.ODataProducerException;
+import org.odata4j.exceptions.ODataProducerExceptions;
 import org.odata4j.format.Entry;
+import org.odata4j.format.FormatParserFactory;
 import org.odata4j.format.FormatType;
 import org.odata4j.format.FormatWriter;
 import org.odata4j.format.FormatWriterFactory;
 import org.odata4j.format.SingleLink;
-import org.odata4j.format.xml.AtomCollectionInfo;
-import org.odata4j.format.xml.AtomServiceDocumentFormatParser;
-import org.odata4j.format.xml.AtomSingleLinkFormatParser;
-import org.odata4j.format.xml.AtomWorkspaceInfo;
-import org.odata4j.format.xml.EdmxFormatParser;
 import org.odata4j.internal.BOMWorkaroundReader;
-import org.odata4j.internal.InternalUtil;
 import org.odata4j.stax2.XMLEventReader2;
+import org.odata4j.stax2.util.StaxUtil;
 
 import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.ClientResponse.Status;
 import com.sun.jersey.api.client.PartialRequestBuilder;
 import com.sun.jersey.api.client.WebResource;
 
+/**
+ * OData client based on Jersey.
+ */
 class ODataJerseyClient extends AbstractODataClient {
 
   private final OClientBehavior[] requiredBehaviors = new OClientBehavior[] { OClientBehaviors.methodTunneling("MERGE") }; // jersey hates MERGE, tunnel through POST
@@ -60,99 +59,31 @@ class ODataJerseyClient extends AbstractODataClient {
     this.client = JerseyClientUtil.newClient(clientFactory, behaviors);
   }
 
-  public EdmDataServices getMetadata(ODataClientRequest request) {
-    ClientResponse response = doRequest(FormatType.ATOM, request, 200, 404, 400);
-    if (response.getStatus() == 404 || response.getStatus() == 400)
-      return null;
-    XMLEventReader2 reader = doXmlRequest(response);
-    return new EdmxFormatParser().parseMetadata(reader);
+  public Reader getFeedReader(ODataClientResponse response) {
+    ClientResponse clientResponse = ((JerseyClientResponse) response).getClientResponse();
+    if (ODataConsumer.dump.responseBody()) {
+      String textEntity = clientResponse.getEntity(String.class);
+      dumpResponseBody(textEntity, clientResponse.getType());
+      return new BOMWorkaroundReader(new StringReader(textEntity));
+    }
+
+    InputStream textEntity = clientResponse.getEntityInputStream();
+    try {
+      return new BOMWorkaroundReader(new InputStreamReader(textEntity, Charsets.Upper.UTF_8));
+    } catch (Exception e) {
+      throw Throwables.propagate(e);
+    }
   }
 
-  public Iterable<AtomCollectionInfo> getCollections(ODataClientRequest request) {
-    ClientResponse response = doRequest(FormatType.ATOM, request, 200);
-    XMLEventReader2 reader = doXmlRequest(response);
-    return Enumerable.create(AtomServiceDocumentFormatParser.parseWorkspaces(reader))
-        .selectMany(AtomWorkspaceInfo.GET_COLLECTIONS);
-  }
-
-  public Iterable<SingleLink> getLinks(ODataClientRequest request) {
-    ClientResponse response = doRequest(FormatType.ATOM, request, 200);
-    XMLEventReader2 reader = doXmlRequest(response);
-    return AtomSingleLinkFormatParser.parseLinks(reader);
-  }
-
-  public ClientResponse getEntity(ODataClientRequest request) {
-    ClientResponse response = doRequest(this.getFormatType(), request, 404, 200, 204);
-    if (response.getStatus() == 404)
-      return null;
-    if (response.getStatus() == 204)
-      return null;
-
-    return response;
-  }
-
-  public ClientResponse getEntities(ODataClientRequest request) {
-    ClientResponse response = doRequest(this.getFormatType(), request, 200);
-    return response;
-  }
-
-  public ClientResponse callFunction(ODataClientRequest request) {
-    ClientResponse response = doRequest(this.getFormatType(), request, 200, 204);
-    return response;
-  }
-
-  public ClientResponse createEntity(ODataClientRequest request) {
-    return doRequest(this.getFormatType(), request, 201);
-  }
-
-  public boolean updateEntity(ODataClientRequest request) {
-    doRequest(this.getFormatType(), request, 200, 204);
-    return true;
-  }
-
-  public boolean deleteEntity(ODataClientRequest request) {
-    doRequest(this.getFormatType(), request, 200, 204, 404);
-    return true;
-  }
-
-  public void deleteLink(ODataClientRequest request) {
-    doRequest(this.getFormatType(), request, 204);
-  }
-
-  public void createLink(ODataClientRequest request) {
-    doRequest(this.getFormatType(), request, 204);
-  }
-
-  public void updateLink(ODataClientRequest request) {
-    doRequest(this.getFormatType(), request, 204);
-  }
-
-  Entry createRequestEntry(EdmEntitySet entitySet, OEntityKey entityKey, List<OProperty<?>> props, List<OLink> links) {
-    final OEntity oentity = entityKey == null
-        ? OEntities.createRequest(entitySet, props, links)
-        : OEntities.create(entitySet, entityKey, props, links);
-
-    return new Entry() {
-
-      @Override
-      public String getUri() {
-        return null;
-      }
-
-      @Override
-      public OEntity getEntity() {
-        return oentity;
-      }
-
-      @Override
-      public String getETag() {
-        return null;
-      }
-    };
+  public String requestBody(FormatType formatType, ODataClientRequest request) throws ODataProducerException {
+    ODataClientResponse response = doRequest(formatType, request, Status.OK);
+    String entity = ((JerseyClientResponse) response).getClientResponse().getEntity(String.class);
+    response.close();
+    return entity;
   }
 
   @SuppressWarnings("unchecked")
-  private ClientResponse doRequest(FormatType reqType, ODataClientRequest request, Integer... expectedResponseStatus) {
+  protected ODataClientResponse doRequest(FormatType reqType, ODataClientRequest request, StatusType... expectedResponseStatus) throws ODataProducerException {
 
     if (behaviors != null) {
       for (OClientBehavior behavior : behaviors)
@@ -162,18 +93,16 @@ class ODataJerseyClient extends AbstractODataClient {
     WebResource webResource = JerseyClientUtil.resource(client, request.getUrl(), behaviors);
 
     // set query params
-    for (String qpn : request.getQueryParams().keySet()) {
+    for (String qpn : request.getQueryParams().keySet())
       webResource = webResource.queryParam(qpn, request.getQueryParams().get(qpn));
-    }
 
     WebResource.Builder b = webResource.getRequestBuilder();
 
     // set headers
     b = b.accept(reqType.getAcceptableMediaTypes());
 
-    for (String header : request.getHeaders().keySet()) {
+    for (String header : request.getHeaders().keySet())
       b.header(header, request.getHeaders().get(header));
-    }
     if (!request.getHeaders().containsKey(ODataConstants.Headers.USER_AGENT))
       b.header(ODataConstants.Headers.USER_AGENT, "odata4j.org");
 
@@ -189,16 +118,16 @@ class ODataJerseyClient extends AbstractODataClient {
       else if (request.getPayload() instanceof SingleLink)
         payloadClass = SingleLink.class;
       else
-        throw new UnsupportedOperationException("Unsupported payload: " + request.getPayload());
+        throw new IllegalArgumentException("Unsupported payload: " + request.getPayload());
 
       StringWriter sw = new StringWriter();
-      FormatWriter<Object> fw = (FormatWriter<Object>) (Object)
+      FormatWriter<Object> fw = (FormatWriter<Object>)
           FormatWriterFactory.getFormatWriter(payloadClass, null, this.getFormatType().toString(), null);
       fw.write(null, sw, request.getPayload());
 
       String entity = sw.toString();
       if (ODataConsumer.dump.requestBody())
-        log(entity);
+        dump(entity);
 
       // allow the client to override the default format writer content-type
       String contentType = request.getHeaders().containsKey(ODataConstants.Headers.CONTENT_TYPE)
@@ -209,46 +138,48 @@ class ODataJerseyClient extends AbstractODataClient {
     }
 
     // execute request
-    ClientResponse response = b.method(request.getMethod(), ClientResponse.class);
+    ClientResponse response = null;
+    try {
+      response = b.method(request.getMethod(), ClientResponse.class);
+    } catch (ClientHandlerException e) {
+      Throwables.propagate(e);
+    }
 
     if (ODataConsumer.dump.responseHeaders())
       dumpHeaders(response);
-    int status = response.getStatus();
-    for (int expStatus : expectedResponseStatus) {
-      if (status == expStatus) {
-        return response;
-      }
+    StatusType status = response.getClientResponseStatus();
+    for (StatusType expStatus : expectedResponseStatus)
+      if (expStatus.getStatusCode() == status.getStatusCode())
+        return new JerseyClientResponse(response);
+
+    // the server responded with an unexpected status
+    RuntimeException exception;
+    String textEntity = response.getEntity(String.class); // input stream can only be consumed once
+    try {
+      // report error as ODataProducerException in case we get a well-formed OData error...
+      MediaType contentType = response.getType();
+      OError error = FormatParserFactory.getParser(OError.class, contentType, null).parse(new StringReader(textEntity));
+      exception = ODataProducerExceptions.create(status, error);
+    } catch (RuntimeException e) {
+      // ... otherwise throw a RuntimeError
+      exception = new RuntimeException(String.format("Expected status %s, found %s. Server response:",
+          Enumerable.create(expectedResponseStatus).join(" or "), status) + "\n" + textEntity, e);
     }
-    throw new RuntimeException(String.format("Expected status %s, found %s:",
-        Enumerable.create(expectedResponseStatus).join(" or "), status) + "\n" + response.getEntity(String.class));
+    throw exception;
   }
 
-  Reader getFeedReader(ClientResponse response) {
-    if (ODataConsumer.dump.responseBody()) {
-      String textEntity = response.getEntity(String.class);
-      dumpResponseBody(textEntity, response.getType());
-      return new BOMWorkaroundReader(new StringReader(textEntity));
-    }
-
-    InputStream textEntity = response.getEntityInputStream();
-    try {
-      return new BOMWorkaroundReader(new InputStreamReader(textEntity, "UTF-8"));
-    } catch (Exception e) {
-      throw Throwables.propagate(e);
-    }
-  }
-
-  private XMLEventReader2 doXmlRequest(ClientResponse response) {
+  protected XMLEventReader2 toXml(ODataClientResponse response) {
+    ClientResponse clientResponse = ((JerseyClientResponse) response).getClientResponse();
 
     if (ODataConsumer.dump.responseBody()) {
-      String textEntity = response.getEntity(String.class);
-      dumpResponseBody(textEntity, response.getType());
-      return InternalUtil.newXMLEventReader(new BOMWorkaroundReader(new StringReader(textEntity)));
+      String textEntity = clientResponse.getEntity(String.class);
+      dumpResponseBody(textEntity, clientResponse.getType());
+      return StaxUtil.newXMLEventReader(new BOMWorkaroundReader(new StringReader(textEntity)));
     }
 
-    InputStream textEntity = response.getEntityInputStream();
+    InputStream textEntity = clientResponse.getEntityInputStream();
     try {
-      return InternalUtil.newXMLEventReader(new BOMWorkaroundReader(new InputStreamReader(textEntity, "UTF-8")));
+      return StaxUtil.newXMLEventReader(new BOMWorkaroundReader(new InputStreamReader(textEntity, Charsets.Upper.UTF_8)));
     } catch (Exception e) {
       throw Throwables.propagate(e);
     }
@@ -261,11 +192,11 @@ class ODataJerseyClient extends AbstractODataClient {
         logXml = XDocument.parse(logXml).toString(XmlFormat.INDENTED);
       } catch (Exception ignore) {}
     }
-    log(logXml);
+    dump(logXml);
   }
 
   private void dumpHeaders(ClientResponse response) {
-    log("Status: " + response.getStatus());
+    dump("Status: " + response.getStatus());
     dump(response.getHeaders());
   }
 
@@ -289,7 +220,7 @@ class ODataJerseyClient extends AbstractODataClient {
   }
 
   private void dumpHeaders(ODataClientRequest request, WebResource webResource, WebResource.Builder b) {
-    log(request.getMethod() + " " + webResource);
+    dump(request.getMethod() + " " + webResource);
     dump(getRequestHeaders(b));
   }
 
@@ -299,10 +230,10 @@ class ODataJerseyClient extends AbstractODataClient {
       return;
 
     for (Object header : headers.keySet())
-      log(header + ": " + headers.getFirst(header));
+      dump(header + ": " + headers.getFirst(header));
   }
 
-  private static void log(String message) {
+  private static void dump(String message) {
     System.out.println(message);
   }
 

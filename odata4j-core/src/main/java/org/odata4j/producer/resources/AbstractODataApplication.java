@@ -22,6 +22,7 @@ public abstract class AbstractODataApplication extends Application {
     classes.add(MetadataResource.class);
     classes.add(ServiceDocumentResource.class);
     classes.add(ODataBatchProvider.class);
+    classes.add(ExceptionMappingProvider.class);
     return classes;
   }
 }

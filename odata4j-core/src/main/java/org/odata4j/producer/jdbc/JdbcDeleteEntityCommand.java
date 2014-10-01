@@ -7,10 +7,10 @@ import org.core4j.ThrowingFunc1;
 import org.odata4j.command.Command;
 import org.odata4j.command.CommandResult;
 import org.odata4j.edm.EdmEntitySet;
+import org.odata4j.exceptions.BadRequestException;
+import org.odata4j.exceptions.NotFoundException;
 import org.odata4j.expression.BoolCommonExpression;
 import org.odata4j.producer.command.DeleteEntityCommandContext;
-import org.odata4j.producer.exceptions.BadRequestException;
-import org.odata4j.producer.exceptions.NotFoundException;
 
 public class JdbcDeleteEntityCommand extends JdbcBaseCommand implements Command<DeleteEntityCommandContext> {
 
@@ -26,7 +26,7 @@ public class JdbcDeleteEntityCommand extends JdbcBaseCommand implements Command<
       throw new NotFoundException();
 
     GenerateSqlDelete deleteGen = jdbcContext.get(GenerateSqlDelete.class);
-    BoolCommonExpression filter =  prependPrimaryKeyFilter(mapping, entitySet.getType(), context.getEntityKey(), null);
+    BoolCommonExpression filter = prependPrimaryKeyFilter(mapping, entitySet.getType(), context.getEntityKey(), null);
     final SqlStatement sqlStatement = deleteGen.generate(mapping, entitySet, filter);
     jdbcContext.getJdbc().execute(new ThrowingFunc1<Connection, Void>() {
       @Override

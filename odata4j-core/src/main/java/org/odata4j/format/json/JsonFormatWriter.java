@@ -1,9 +1,9 @@
 package org.odata4j.format.json;
 
 import java.io.Writer;
+import java.math.BigDecimal;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 
 import javax.ws.rs.core.UriInfo;
 
@@ -116,18 +116,13 @@ public abstract class JsonFormatWriter<T> implements FormatWriter<T> {
     } else if (type.equals(EdmSimpleType.SBYTE)) {
       jw.writeNumber((Byte) pvalue);
     } else if (type.equals(EdmSimpleType.DATETIME)) {
-      LocalDateTime ldt = (LocalDateTime) pvalue;
-      long millis = ldt.toDateTime().getMillis();
-      String date = "\"\\/Date(" + millis + ")\\/\"";
-      jw.writeRaw(date);
+      jw.writeRaw(InternalUtil.formatDateTimeForJson((LocalDateTime) pvalue));
     } else if (type.equals(EdmSimpleType.DECIMAL)) {
-      // jw.writeString("decimal'" + (BigDecimal) pvalue + "'");
-      jw.writeString(String.format(Locale.ENGLISH, "%1$.4f", pvalue));
+      jw.writeString(((BigDecimal) pvalue).toPlainString());
     } else if (type.equals(EdmSimpleType.DOUBLE)) {
-      // jw.writeString(pvalue.toString());
-      jw.writeString(String.format(Locale.ENGLISH, "%1$.4f", pvalue));
+      jw.writeString(pvalue.toString());
     } else if (type.equals(EdmSimpleType.GUID)) {
-      jw.writeString("guid'" + (Guid) pvalue + "'");
+      jw.writeString(((Guid) pvalue).toString());
     } else if (type.equals(EdmSimpleType.INT16)) {
       jw.writeNumber((Short) pvalue);
     } else if (type.equals(EdmSimpleType.INT32)) {
@@ -137,16 +132,15 @@ public abstract class JsonFormatWriter<T> implements FormatWriter<T> {
     } else if (type.equals(EdmSimpleType.SINGLE)) {
       jw.writeNumber((Float) pvalue);
     } else if (type.equals(EdmSimpleType.TIME)) {
-      LocalTime ldt = (LocalTime) pvalue;
-      jw.writeString("time'" + ldt + "'");
+      jw.writeRaw(InternalUtil.formatTimeForJson((LocalTime) pvalue));
     } else if (type.equals(EdmSimpleType.DATETIMEOFFSET)) {
-      jw.writeString("datetimeoffset'" + InternalUtil.formatDateTimeOffset((DateTime) pvalue) + "'");
+      jw.writeRaw(InternalUtil.formatDateTimeOffsetForJson((DateTime) pvalue));
     } else if (type instanceof EdmComplexType || (type instanceof EdmSimpleType && (!((EdmSimpleType<?>) type).isSimple()))) {
       // the OComplexObject value type is not in use everywhere yet, fix TODO
       if (pvalue instanceof OComplexObject) {
         pvalue = ((OComplexObject) pvalue).getProperties();
       }
-      writeComplexObject(jw, type.getFullyQualifiedTypeName(), (List<OProperty<?>>) pvalue);
+      writeComplexObject(jw, null, type.getFullyQualifiedTypeName(), (List<OProperty<?>>) pvalue);
     } else if (type instanceof EdmCollectionType) {
       writeCollection(jw, (EdmCollectionType) type, (OCollection<? extends OObject>) pvalue);
     } else {
@@ -173,7 +167,7 @@ public abstract class JsonFormatWriter<T> implements FormatWriter<T> {
             jw.writeSeparator();
           }
           if (obj instanceof OComplexObject) {
-            writeComplexObject(jw, obj.getType().getFullyQualifiedTypeName(), ((OComplexObject) obj).getProperties());
+            writeComplexObject(jw, null, obj.getType().getFullyQualifiedTypeName(), ((OComplexObject) obj).getProperties());
           } else if (obj instanceof OSimpleObject) {
             writeValue(jw, obj.getType(), ((OSimpleObject) obj).getValue());
           }
@@ -193,7 +187,7 @@ public abstract class JsonFormatWriter<T> implements FormatWriter<T> {
     jw.endObject();
   }
 
-  protected void writeComplexObject(JsonWriter jw, String fullyQualifiedTypeName, List<OProperty<?>> props) {
+  protected void writeComplexObject(JsonWriter jw, String complexObjectName, String fullyQualifiedTypeName, List<OProperty<?>> props) {
     jw.startObject();
     {
       /* Confused:  The live OData producers that have complex types (ebay, netflix)
@@ -208,7 +202,14 @@ public abstract class JsonFormatWriter<T> implements FormatWriter<T> {
       jw.endObject();
       jw.writeSeparator();
        */
+      if (complexObjectName != null) {
+        jw.writeName(complexObjectName);
+        jw.startObject();
+      }
       writeOProperties(jw, props);
+      if (complexObjectName != null) {
+        jw.endObject();
+      }
     }
     jw.endObject();
   }
@@ -221,7 +222,7 @@ public abstract class JsonFormatWriter<T> implements FormatWriter<T> {
 
       // TODO: I'm keeping this pattern of writing the __metadata if we have a non-null type..it seems like we could still
       //       write the uri even if we don't have a type.  Also, are there any scenarios where the entity type would be null?  Not sure.
-      if (isResponse && null != oe.getEntityType()) {
+      if (isResponse && oe.getEntityType() != null) {
         baseUri = uriInfo.getBaseUri().toString();
 
         jw.writeName("__metadata");

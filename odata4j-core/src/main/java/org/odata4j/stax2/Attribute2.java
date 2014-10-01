@@ -4,4 +4,6 @@ public interface Attribute2 {
 
   String getValue();
 
+  QName2 getName();
+
 }

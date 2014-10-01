@@ -7,3 +7,8 @@ syntax: glob
 target
 .settings
 .DS_Store
+.idea
+.externalToolBuilders
+*.iml
+*.ipr
+*.iws

@@ -1,22 +1,26 @@
 package org.odata4j.core;
 
+import java.util.Iterator;
+
 import org.core4j.Enumerable;
+import org.odata4j.exceptions.ODataProducerException;
 
 /**
- * A consumer-side query-request builder.  Call {@link #execute()} or simply iterate to issue the request.
+ * A consumer-side query-request builder.  Call {@link #execute()} to issue the request.
  *
  * @param <T>  the entity representation as a java type
  */
-public interface OQueryRequest<T> extends Iterable<T> {
+public interface OQueryRequest<T> {
 
   /**
    * Sends the query-request to the OData service, returning a client-side {@link Enumerable} for subsequent in-memory operations.
    * <p>The returned enumerable transparently handles server-side paging and deferred enumeration.</p>
-   * <p><code>OQueryRequest</code> itself also extends {@link Iterable} so that it can be used in a <code>for each</code> loop without calling execute().</p>
+   * <p>Subsequent server calls are handled within the enumerable's {@link Iterator}.</p>
    *
    * @return the response as a client-side enumerable
+   * @throws ODataProducerException  error from the producer
    */
-  Enumerable<T> execute();
+  Enumerable<T> execute() throws ODataProducerException;
 
   /**
    * Sets the number of items to return.

@@ -2,6 +2,7 @@ package org.odata4j.edm;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import org.odata4j.core.ImmutableList;
@@ -25,9 +26,9 @@ public class EdmSchema extends EdmItem {
 
   private EdmSchema(String namespace, String alias, ImmutableList<EdmEntityType> entityTypes,
       ImmutableList<EdmComplexType> complexTypes, ImmutableList<EdmAssociation> associations,
-      ImmutableList<EdmEntityContainer> entityContainers,
-      EdmDocumentation doc, ImmutableList<EdmAnnotation<?>> annots) {
-    super(doc, annots);
+      ImmutableList<EdmEntityContainer> entityContainers, EdmDocumentation doc,
+      ImmutableList<EdmAnnotation<?>> annots, ImmutableList<EdmAnnotation<?>> annotElements) {
+    super(doc, annots, annotElements);
     this.namespace = namespace;
     this.alias = alias;
     this.entityTypes = entityTypes;
@@ -138,7 +139,8 @@ public class EdmSchema extends EdmItem {
           ImmutableList.copyOf(associations),
           ImmutableList.copyOf(entityContainers),
           getDocumentation(),
-          ImmutableList.copyOf(getAnnotations()));
+          ImmutableList.copyOf(getAnnotations()),
+          ImmutableList.copyOf(getAnnotationElements()));
     }
 
     public Builder setNamespace(String namespace) {
@@ -151,7 +153,7 @@ public class EdmSchema extends EdmItem {
       return this;
     }
 
-    public Builder addEntityTypes(List<EdmEntityType.Builder> entityTypes) {
+    public Builder addEntityTypes(Collection<EdmEntityType.Builder> entityTypes) {
       this.entityTypes.addAll(entityTypes);
       return this;
     }
@@ -161,12 +163,17 @@ public class EdmSchema extends EdmItem {
       return this;
     }
 
-    public Builder addComplexTypes(List<EdmComplexType.Builder> complexTypes) {
+    public Builder addComplexTypes(Collection<EdmComplexType.Builder> complexTypes) {
       this.complexTypes.addAll(complexTypes);
       return this;
     }
 
-    public Builder addAssociations(List<EdmAssociation.Builder> associations) {
+    public Builder addComplexTypes(EdmComplexType.Builder... complexTypes) {
+      this.complexTypes.addAll(Arrays.asList(complexTypes));
+      return this;
+    }
+
+    public Builder addAssociations(Collection<EdmAssociation.Builder> associations) {
       this.associations.addAll(associations);
       return this;
     }
@@ -176,7 +183,7 @@ public class EdmSchema extends EdmItem {
       return this;
     }
 
-    public Builder addEntityContainers(List<EdmEntityContainer.Builder> entityContainers) {
+    public Builder addEntityContainers(Collection<EdmEntityContainer.Builder> entityContainers) {
       this.entityContainers.addAll(entityContainers);
       return this;
     }
@@ -209,6 +216,17 @@ public class EdmSchema extends EdmItem {
         }
       }
       return null;
+    }
+
+    public String dealias(String fqName) {
+      if (alias == null || alias.length() == 0
+          || fqName == null || fqName.length() == 0
+          || namespace == null || namespace.length() == 0)
+        return fqName;
+      String aliasPrefix = alias + ".";
+      if (fqName.startsWith(aliasPrefix))
+        return namespace + "." + fqName.substring(aliasPrefix.length());
+      return fqName;
     }
   }
 

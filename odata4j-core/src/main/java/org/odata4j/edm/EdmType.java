@@ -9,7 +9,7 @@ import org.odata4j.core.OCollection;
 import org.odata4j.core.OComplexObject;
 import org.odata4j.core.OEntity;
 import org.odata4j.core.OObject;
-import org.odata4j.producer.exceptions.NotImplementedException;
+import org.odata4j.exceptions.NotImplementedException;
 
 /**
  * A type in the EDM type system.
@@ -32,11 +32,12 @@ public abstract class EdmType extends EdmItem {
   private final String fullyQualifiedTypeName;
 
   protected EdmType(String fullyQualifiedTypeName) {
-    this(fullyQualifiedTypeName, null, null);
+    this(fullyQualifiedTypeName, null, null, null);
   }
 
-  protected EdmType(String fullyQualifiedTypeName, EdmDocumentation documentation, ImmutableList<EdmAnnotation<?>> annotations) {
-    super(documentation, annotations);
+  protected EdmType(String fullyQualifiedTypeName, EdmDocumentation documentation, ImmutableList<EdmAnnotation<?>> annotations,
+      ImmutableList<EdmAnnotation<?>> annotationElements) {
+    super(documentation, annotations, annotationElements);
     this.fullyQualifiedTypeName = fullyQualifiedTypeName;
   }
 
@@ -49,7 +50,12 @@ public abstract class EdmType extends EdmItem {
   public static EdmSimpleType<?> getSimple(String fullyQualifiedTypeName) {
     if (fullyQualifiedTypeName == null)
       return null;
-    return LazyInit.POOL.get(fullyQualifiedTypeName);
+    EdmSimpleType<?> simpleType = LazyInit.POOL.get(fullyQualifiedTypeName);
+    if (simpleType == null && !fullyQualifiedTypeName.contains(".")) // allow "string, Int32" for old dallas service functions
+      for (EdmSimpleType<?> simpleTypeInPool : LazyInit.POOL.values())
+        if (simpleTypeInPool.getFullyQualifiedTypeName().equalsIgnoreCase("Edm." + fullyQualifiedTypeName))
+          return simpleTypeInPool;
+    return simpleType;
   }
 
   /** Gets the corresponding instance type of a given edm type. e.g. {@code OEntity} for {@code EdmEntityType} */

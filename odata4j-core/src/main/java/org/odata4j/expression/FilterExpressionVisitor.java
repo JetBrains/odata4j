@@ -4,7 +4,7 @@ import org.odata4j.expression.OrderByExpression.Direction;
 import org.odata4j.internal.InternalUtil;
 import org.odata4j.repack.org.apache.commons.codec.binary.Hex;
 
-public class FilterExpressionVisitor implements ExpressionVisitor {
+public class FilterExpressionVisitor extends PreOrderVisitor {
 
   // only literals supported, so this suffices for now
   private String fragment;
@@ -52,7 +52,7 @@ public class FilterExpressionVisitor implements ExpressionVisitor {
 
   @Override
   public void visit(DoubleLiteral expr) {
-    push(Double.toString(expr.getValue()));
+    push(Double.toString(expr.getValue()) + "d");
   }
 
   @Override
@@ -72,17 +72,17 @@ public class FilterExpressionVisitor implements ExpressionVisitor {
 
   @Override
   public void visit(DateTimeLiteral expr) {
-    push("datetime'" + InternalUtil.formatDateTime(expr.getValue()) + "'");
+    push("datetime'" + InternalUtil.formatDateTimeForXml(expr.getValue()) + "'");
   }
 
   @Override
   public void visit(DateTimeOffsetLiteral expr) {
-    push("datetimeoffset'" + InternalUtil.formatDateTimeOffset(expr.getValue()) + "'");
+    push("datetimeoffset'" + InternalUtil.formatDateTimeOffsetForXml(expr.getValue()) + "'");
   }
 
   @Override
   public void visit(TimeLiteral expr) {
-    push("time'" + InternalUtil.toString(expr.getValue()) + "'");
+    push("time'" + InternalUtil.formatTimeForXml(expr.getValue()) + "'");
   }
 
   @Override

@@ -88,7 +88,7 @@ public class MetadataEdmGenerator implements EdmGenerator {
     props.add(ep);
 
     EdmComplexType.Builder propertyRef = EdmComplexType.newBuilder().setNamespace(Edm.namespace).setName(
-        XmlFormatParser.EDM2008_PROPERTYREF.getLocalPart()).addProperties(props);
+        XmlFormatParser.EDM2008_9_PROPERTYREF.getLocalPart()).addProperties(props);
     ctypes.add(propertyRef);
 
     // ----------------------------- EntityKey --------------------------
@@ -212,7 +212,9 @@ public class MetadataEdmGenerator implements EdmGenerator {
     navprops = new ArrayList<EdmNavigationProperty.Builder>();
 
     ep = EdmProperty.newBuilder(Edm.EntityType.Key).setType(this.entityKeyType).setNullable(true);
+    props.add(ep);
 
+    ep = EdmProperty.newBuilder(Edm.EntityType.Documentation).setType(this.documentationType).setNullable(true);
     props.add(ep);
 
     EdmEntityType.Builder entityType = EdmEntityType.newBuilder()

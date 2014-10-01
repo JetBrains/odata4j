@@ -1,6 +1,7 @@
 package org.odata4j.consumer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.odata4j.core.OEntity;
@@ -15,6 +16,9 @@ import org.odata4j.edm.EdmNavigationProperty;
 import org.odata4j.format.xml.XmlFormatWriter;
 import org.odata4j.internal.InternalUtil;
 
+/**
+ * Shared consumer request implementation for operations with an entity as the request payload.
+ */
 public abstract class AbstractConsumerEntityPayloadRequest {
 
   protected final List<OProperty<?>> props = new ArrayList<OProperty<?>>();
@@ -76,6 +80,28 @@ public abstract class AbstractConsumerEntityPayloadRequest {
     String rel = XmlFormatWriter.related + navProperty;
 
     this.links.add(OLinks.relatedEntity(rel, navProperty, href.toString()));
+    return rt;
+  }
+
+  protected <T> T inline(T rt, String navProperty, OEntity... entities) {
+    EdmEntitySet entitySet = metadata.getEdmEntitySet(entitySetName);
+    EdmNavigationProperty navProp = entitySet.getType().findNavigationProperty(navProperty);
+    if (navProp == null)
+      throw new IllegalArgumentException("unknown navigation property " + navProperty);
+
+    // TODO get rid of XmlFormatWriter
+    String rel = XmlFormatWriter.related + navProperty;
+    String href = entitySetName + "/" + navProperty;
+    if (navProp.getToRole().getMultiplicity() == EdmMultiplicity.MANY) {
+      links.add(OLinks.relatedEntitiesInline(rel, navProperty, href, Arrays.asList(entities)));
+    } else {
+      if (entities.length > 1)
+        throw new IllegalArgumentException("only one entity is allowed for this navigation property " + navProperty);
+
+      links.add(OLinks.relatedEntityInline(rel, navProperty, href,
+          entities.length > 0 ? entities[0] : null));
+    }
+
     return rt;
   }
 

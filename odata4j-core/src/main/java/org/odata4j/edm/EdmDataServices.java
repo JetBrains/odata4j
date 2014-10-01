@@ -11,7 +11,8 @@ import org.odata4j.core.ODataVersion;
 import org.odata4j.core.OPredicates;
 import org.odata4j.core.PrefixedNamespace;
 import org.odata4j.edm.EdmItem.BuilderContext;
-import org.odata4j.producer.exceptions.NotFoundException;
+import org.odata4j.exceptions.NotFoundException;
+import org.odata4j.internal.AndroidCompat;
 
 /**
  * The &lt;edmx:DataServices&gt; element contains the service metadata of a Data Service. This service metadata contains zero or more EDM conceptual schemas.
@@ -72,6 +73,13 @@ public class EdmDataServices {
   }
 
   public EdmEntitySet findEdmEntitySet(String entitySetName) {
+    int idx = entitySetName.indexOf('.');
+    if (idx != -1) {
+      EdmEntitySet ees = findEdmEntitySet(entitySetName.substring(0, idx), entitySetName.substring(idx+1));
+      if (ees != null) {
+        return ees;
+      }
+    }
     for (EdmSchema schema : this.schemas) {
       for (EdmEntityContainer eec : schema.getEntityContainers()) {
         for (EdmEntitySet ees : eec.getEntitySets()) {
@@ -84,7 +92,59 @@ public class EdmDataServices {
     return null;
   }
 
+  private EdmEntitySet findEdmEntitySet(String entityContainerName, String entitySetName) {
+    for (EdmSchema schema : this.schemas) {
+      for (EdmEntityContainer eec : schema.getEntityContainers()) {
+        if (!eec.getName().equals(entityContainerName)) {
+          continue;
+        }
+        for (EdmEntitySet ees : eec.getEntitySets()) {
+          if (ees.getName().equals(entitySetName)) {
+            return ees;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  public EdmAssociationSet findEdmAssociationSet(String associationSetName) {
+    for (EdmSchema schema : this.schemas) {
+      for (EdmEntityContainer eec : schema.getEntityContainers()) {
+        for (EdmAssociationSet eas : eec.getAssociationSets()) {
+          if (eas.getName().equals(associationSetName)) {
+            return eas;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  private EdmFunctionImport findEdmFunctionImport(String entityContainerName, String functionImportName) {
+    for (EdmSchema schema : this.schemas) {
+      for (EdmEntityContainer eec : schema.getEntityContainers()) {
+        if (!eec.getName().equals(entityContainerName)) {
+          continue;
+        }
+        for (EdmFunctionImport efi : eec.getFunctionImports()) {
+          if (efi.getName().equals(functionImportName)) {
+            return efi;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   public EdmFunctionImport findEdmFunctionImport(String functionImportName) {
+    int idx = functionImportName.indexOf('.');
+    if (idx != -1) {
+      EdmFunctionImport efi = findEdmFunctionImport(functionImportName.substring(0, idx), functionImportName.substring(idx+1));
+      if (efi != null) {
+        return efi;
+      }
+    }
     for (EdmSchema schema : this.schemas) {
       for (EdmEntityContainer eec : schema.getEntityContainers()) {
         for (EdmFunctionImport efi : eec.getFunctionImports()) {
@@ -138,6 +198,20 @@ public class EdmDataServices {
     }
     return null;
   }
+
+  // - - - - - - - - - - -  - -
+  public EdmAssociation findEdmAssociation(String fqName) {
+    for (EdmSchema schema : this.schemas) {
+      for (EdmAssociation assoc : schema.getAssociations()) {
+        if (assoc.getFQNamespaceName().equals(fqName)) {
+          return assoc;
+        }
+      }
+    }
+    return null;
+  }
+
+  // - - - - - - - - - - - - - - - -
 
   public Iterable<EdmEntityType> getEntityTypes() {
     List<EdmEntityType> rt = new ArrayList<EdmEntityType>();
@@ -260,8 +334,9 @@ public class EdmDataServices {
     public EdmComplexType.Builder findEdmComplexType(String complexTypeFQName) {
       // TODO share or remove
       for (EdmSchema.Builder schema : this.schemas) {
+        String fqName = schema.dealias(complexTypeFQName);
         for (EdmComplexType.Builder ect : schema.getComplexTypes()) {
-          if (ect.getFullyQualifiedTypeName().equals(complexTypeFQName)) {
+          if (ect.getFullyQualifiedTypeName().equals(fqName)) {
             return ect;
           }
         }
@@ -289,9 +364,11 @@ public class EdmDataServices {
 
     public EdmEntityType.Builder findEdmEntityType(String fqName) {
       // TODO share or remove
+      if (fqName == null)
+        return null;
       for (EdmSchema.Builder schema : this.schemas) {
         for (EdmEntityType.Builder et : schema.getEntityTypes()) {
-          if (et.getFullyQualifiedTypeName().equals(fqName)) {
+          if (fqName.equals(et.getFQAliasName()) || et.getFullyQualifiedTypeName().equals(fqName)) {
             return et;
           }
         }
@@ -310,6 +387,8 @@ public class EdmDataServices {
     }
 
     public EdmType.Builder<?, ?> resolveType(String fqTypeName) {
+      if (fqTypeName == null || AndroidCompat.String_isEmpty(fqTypeName))
+        return null;
       // type resolution:
       // NOTE: this will likely change if RowType is ever implemented. I'm
       //       guessing that in that case, the TempEdmFunctionImport will already
@@ -317,8 +396,7 @@ public class EdmDataServices {
       // first, try to resolve the type name as a simple or complex type
       EdmType type = EdmType.getSimple(fqTypeName);
       EdmType.Builder<?, ?> builder = null;
-
-      if (null != type) {
+      if (type != null) {
         builder = EdmSimpleType.newBuilder(type);
       } else {
         builder = findEdmEntityType(fqTypeName);

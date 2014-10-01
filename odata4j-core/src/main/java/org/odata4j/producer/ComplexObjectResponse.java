@@ -11,4 +11,6 @@ public interface ComplexObjectResponse extends BaseResponse {
 
   OComplexObject getObject();
 
+  String getComplexObjectName();
+
 }

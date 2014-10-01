@@ -1,5 +1,7 @@
 package org.odata4j.core;
 
+import org.odata4j.exceptions.ODataProducerException;
+
 /**
  * A consumer-side create-request builder.  Call {@link #execute()} to issue the request.
  *
@@ -72,12 +74,24 @@ public interface OCreateRequest<T> {
   OCreateRequest<T> inline(String navProperty, OEntity... entities);
 
   /**
+   * Create related entities inline as part of a single request.
+   *  
+   * @param navProperty  the new entity's relationship navigation property
+   * @param entities  related entities, returned by {@link #get()}
+   * @return  the create-request builder
+   * 
+   * @see #get()
+   */
+  OCreateRequest<T> inline(String navProperty, Iterable<OEntity> entities);
+
+  /**
    * Sends the create-request to the OData service and returns the newly 
    * created entity.
    * 
    * @return newly created entity
+   * @throws ODataProducerException  error from the producer
    */
-  T execute();
+  T execute() throws ODataProducerException;
 
   /**
    * Returns a locally-built entity and does not send the create-request

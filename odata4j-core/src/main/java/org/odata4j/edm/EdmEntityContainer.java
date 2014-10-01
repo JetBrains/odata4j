@@ -2,6 +2,7 @@ package org.odata4j.edm;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import org.odata4j.core.ImmutableList;
@@ -19,17 +20,20 @@ public class EdmEntityContainer extends EdmItem {
   private final String name;
   private final boolean isDefault;
   private final Boolean lazyLoadingEnabled;
+  private final String extendz;
   private final ImmutableList<EdmEntitySet> entitySets;
   private final ImmutableList<EdmAssociationSet> associationSets;
   private final ImmutableList<EdmFunctionImport> functionImports;
 
-  private EdmEntityContainer(String name, boolean isDefault, Boolean lazyLoadingEnabled,
+  private EdmEntityContainer(String name, boolean isDefault, Boolean lazyLoadingEnabled, String extendz,
       ImmutableList<EdmEntitySet> entitySets, ImmutableList<EdmAssociationSet> associationSets,
-      ImmutableList<EdmFunctionImport> functionImports, EdmDocumentation doc, ImmutableList<EdmAnnotation<?>> annots) {
-    super(doc, annots);
+      ImmutableList<EdmFunctionImport> functionImports, EdmDocumentation doc, ImmutableList<EdmAnnotation<?>> annots,
+      ImmutableList<EdmAnnotation<?>> annotElements) {
+    super(doc, annots, annotElements);
     this.name = name;
     this.isDefault = isDefault;
     this.lazyLoadingEnabled = lazyLoadingEnabled;
+    this.extendz = extendz;
     this.entitySets = entitySets;
     this.associationSets = associationSets;
     this.functionImports = functionImports;
@@ -45,6 +49,10 @@ public class EdmEntityContainer extends EdmItem {
 
   public Boolean getLazyLoadingEnabled() {
     return lazyLoadingEnabled;
+  }
+
+  public String getExtendz() {
+    return extendz;
   }
 
   public List<EdmEntitySet> getEntitySets() {
@@ -73,6 +81,7 @@ public class EdmEntityContainer extends EdmItem {
     private String name;
     private boolean isDefault;
     private Boolean lazyLoadingEnabled;
+    private String extendz;
     private final List<EdmEntitySet.Builder> entitySets = new ArrayList<EdmEntitySet.Builder>();
     private final List<EdmAssociationSet.Builder> associationSets = new ArrayList<EdmAssociationSet.Builder>();
     private final List<EdmFunctionImport.Builder> functionImports = new ArrayList<EdmFunctionImport.Builder>();
@@ -107,11 +116,11 @@ public class EdmEntityContainer extends EdmItem {
       for (EdmAssociationSet.Builder associationSet : this.associationSets)
         associationSets.add(associationSet.build());
 
-      return new EdmEntityContainer(name, isDefault, lazyLoadingEnabled,
+      return new EdmEntityContainer(name, isDefault, lazyLoadingEnabled, extendz,
           ImmutableList.copyOf(entitySets),
           ImmutableList.copyOf(associationSets),
           ImmutableList.copyOf(functionImports),
-          getDocumentation(), ImmutableList.copyOf(getAnnotations()));
+          getDocumentation(), ImmutableList.copyOf(getAnnotations()), ImmutableList.copyOf(getAnnotationElements()));
     }
 
     public Builder setName(String name) {
@@ -129,22 +138,27 @@ public class EdmEntityContainer extends EdmItem {
       return this;
     }
 
+    public Builder setExtendz(String extendz) {
+      this.extendz = extendz;
+      return this;
+    }
+
     public Builder addEntitySets(EdmEntitySet.Builder... entitySets) {
       this.entitySets.addAll(Arrays.asList(entitySets));
       return this;
     }
 
-    public Builder addEntitySets(List<EdmEntitySet.Builder> entitySets) {
+    public Builder addEntitySets(Collection<EdmEntitySet.Builder> entitySets) {
       this.entitySets.addAll(entitySets);
       return this;
     }
 
-    public Builder addAssociationSets(List<EdmAssociationSet.Builder> associationSets) {
+    public Builder addAssociationSets(Collection<EdmAssociationSet.Builder> associationSets) {
       this.associationSets.addAll(associationSets);
       return this;
     }
 
-    public Builder addFunctionImports(List<EdmFunctionImport.Builder> functionImports) {
+    public Builder addFunctionImports(Collection<EdmFunctionImport.Builder> functionImports) {
       this.functionImports.addAll(functionImports);
       return this;
     }

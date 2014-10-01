@@ -16,8 +16,9 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Providers;
 
 import org.odata4j.core.ODataConstants;
 import org.odata4j.core.ODataVersion;
@@ -25,6 +26,8 @@ import org.odata4j.core.OEntity;
 import org.odata4j.core.OEntityKey;
 import org.odata4j.edm.EdmDataServices;
 import org.odata4j.edm.EdmEntitySet;
+import org.odata4j.exceptions.NotFoundException;
+import org.odata4j.exceptions.NotImplementedException;
 import org.odata4j.format.FormatWriter;
 import org.odata4j.format.FormatWriterFactory;
 import org.odata4j.internal.InternalUtil;
@@ -32,11 +35,10 @@ import org.odata4j.producer.BaseResponse;
 import org.odata4j.producer.CountResponse;
 import org.odata4j.producer.EntitiesResponse;
 import org.odata4j.producer.EntityResponse;
+import org.odata4j.producer.ODataContextImpl;
 import org.odata4j.producer.ODataProducer;
 import org.odata4j.producer.PropertyResponse;
 import org.odata4j.producer.QueryInfo;
-import org.odata4j.producer.exceptions.NotFoundException;
-import org.odata4j.producer.exceptions.NotImplementedException;
 
 public class PropertyRequestResource extends BaseResource {
 
@@ -45,7 +47,7 @@ public class PropertyRequestResource extends BaseResource {
 
   @PUT
   public Response updateEntity(
-      @Context ContextResolver<ODataProducer> producerResolver,
+      @Context Providers providers,
       @PathParam("entitySetName") String entitySetName,
       @PathParam("id") String id,
       @PathParam("navProp") String navProp) {
@@ -58,7 +60,8 @@ public class PropertyRequestResource extends BaseResource {
   public Response mergeEntity(
       @Context HttpHeaders httpHeaders,
       @Context UriInfo uriInfo,
-      @Context ContextResolver<ODataProducer> producerResolver,
+      @Context Providers providers,
+      @Context SecurityContext securityContext,
       @PathParam("entitySetName") String entitySetName,
       @PathParam("id") String id,
       @PathParam("navProp") String navProp,
@@ -67,7 +70,7 @@ public class PropertyRequestResource extends BaseResource {
     String method = httpHeaders.getRequestHeaders().getFirst(ODataConstants.Headers.X_HTTP_METHOD);
     if (!"MERGE".equals(method)) {
 
-      ODataProducer producer = producerResolver.getContext(ODataProducer.class);
+      ODataProducer producer = getODataProducer(providers);
 
       // determine the expected entity set
       EdmDataServices metadata = producer.getMetadata();
@@ -79,7 +82,8 @@ public class PropertyRequestResource extends BaseResource {
       OEntity entity = getRequestEntity(httpHeaders, uriInfo, payload, metadata, ees.getName(), OEntityKey.parse(id));
 
       // execute the create
-      EntityResponse response = producer.createEntity(entitySetName, OEntityKey.parse(id), navProp, entity);
+      EntityResponse response = producer.createEntity(ODataContextImpl.builder().aspect(httpHeaders).aspect(securityContext).build(),
+          entitySetName, OEntityKey.parse(id), navProp, entity);
 
       if (response == null) {
         throw new NotFoundException();
@@ -110,7 +114,7 @@ public class PropertyRequestResource extends BaseResource {
 
   @DELETE
   public Response deleteEntity(
-      @Context ContextResolver<ODataProducer> producerResolver,
+      @Context Providers providers,
       @PathParam("entitySetName") String entitySetName,
       @PathParam("id") String id,
       @PathParam("navProp") String navProp) {
@@ -125,7 +129,8 @@ public class PropertyRequestResource extends BaseResource {
   public Response getNavProperty(
       @Context HttpHeaders httpHeaders,
       @Context UriInfo uriInfo,
-      @Context ContextResolver<ODataProducer> producerResolver,
+      @Context Providers providers,
+      @Context SecurityContext securityContext,
       @PathParam("entitySetName") String entitySetName,
       @PathParam("id") String id,
       @PathParam("navProp") String navProp,
@@ -151,7 +156,7 @@ public class PropertyRequestResource extends BaseResource {
         OptionsQueryParser.parseSelect(expand),
         OptionsQueryParser.parseSelect(select));
 
-    ODataProducer producer = producerResolver.getContext(ODataProducer.class);
+    ODataProducer producer = getODataProducer(providers);
 
     if (navProp.endsWith("/$count")
         || navProp.endsWith("/$count/")
@@ -161,6 +166,7 @@ public class PropertyRequestResource extends BaseResource {
       navProp = navProp.replace("/$count", "");
 
       CountResponse response = producer.getNavPropertyCount(
+          ODataContextImpl.builder().aspect(httpHeaders).aspect(securityContext).build(),
           entitySetName,
           OEntityKey.parse(id),
           navProp,
@@ -179,8 +185,11 @@ public class PropertyRequestResource extends BaseResource {
           .ok(entity, ODataConstants.TEXT_PLAIN_CHARSET_UTF8)
           .header(ODataConstants.Headers.DATA_SERVICE_VERSION, version.asString)
           .build();
-    } else {
+    }
+    else {
+
       BaseResponse response = producer.getNavProperty(
+          ODataContextImpl.builder().aspect(httpHeaders).aspect(securityContext).build(),
           entitySetName,
           OEntityKey.parse(id),
           navProp,

@@ -34,23 +34,28 @@ public class EdmProperty extends EdmPropertyBase {
   private final Boolean unicode;
   private final Boolean fixedLength;
   private final String storeGeneratedPattern;
+  private final String concurrencyMode;
   private final CollectionKind collectionKind;
   private final String defaultValue;
   private final Integer precision;
   private final Integer scale;
+  private final String collation;
 
   private final String fcTargetPath;
   private final String fcContentKind;
   private final String fcKeepInContent;
   private final String fcEpmContentKind;
   private final String fcEpmKeepInContent;
+  private final String fcNsPrefix;
+  private final String fcNsUri;
+  private final String mimeType;
 
-  private EdmProperty(EdmDocumentation documentation, ImmutableList<EdmAnnotation<?>> annotations, String name,
-      EdmStructuralType declaringType, EdmType type, boolean nullable, Integer maxLength, Boolean unicode, Boolean fixedLength,
-      String storeGeneratedPattern,
-      String fcTargetPath, String fcContentKind, String fcKeepInContent, String fcEpmContentKind, String fcEpmKeepInContent,
-      CollectionKind collectionKind, String defaultValue, Integer precision, Integer scale) {
-    super(documentation, annotations, name);
+  private EdmProperty(EdmDocumentation documentation, ImmutableList<EdmAnnotation<?>> annotations, ImmutableList<EdmAnnotation<?>> annotElements,
+      String name, EdmStructuralType declaringType, EdmType type, boolean nullable, Integer maxLength, Boolean unicode, Boolean fixedLength,
+      String storeGeneratedPattern, String concurrencyMode, String fcTargetPath, String fcContentKind, String fcKeepInContent, String fcEpmContentKind,
+      String fcEpmKeepInContent, String fcNsPrefix, String fcNsUri, CollectionKind collectionKind, String defaultValue,
+      Integer precision, Integer scale, String collation, String mimeType) {
+    super(documentation, annotations, annotElements, name);
     this.declaringType = declaringType;
     this.type = type;
     this.nullable = nullable;
@@ -62,12 +67,17 @@ public class EdmProperty extends EdmPropertyBase {
     this.defaultValue = defaultValue;
     this.precision = precision;
     this.scale = scale;
+    this.collation = collation;
 
     this.fcTargetPath = fcTargetPath;
     this.fcContentKind = fcContentKind;
     this.fcKeepInContent = fcKeepInContent;
     this.fcEpmContentKind = fcEpmContentKind;
     this.fcEpmKeepInContent = fcEpmKeepInContent;
+    this.fcNsPrefix = fcNsPrefix;
+    this.fcNsUri = fcNsUri;
+    this.mimeType = mimeType;
+    this.concurrencyMode = concurrencyMode;
   }
 
   public EdmType getType() {
@@ -110,6 +120,10 @@ public class EdmProperty extends EdmPropertyBase {
     return scale;
   }
 
+  public String getCollation() {
+    return collation;
+  }
+
   public String getFcTargetPath() {
     return fcTargetPath;
   }
@@ -128,6 +142,22 @@ public class EdmProperty extends EdmPropertyBase {
 
   public String getFcEpmKeepInContent() {
     return fcEpmKeepInContent;
+  }
+
+  public String getFcNsPrefix() {
+    return fcNsPrefix;
+  }
+
+  public String getFcNsUri() {
+    return fcNsUri;
+  }
+
+  public String getMimeType() {
+    return mimeType;
+  }
+
+  public String getConcurrencyMode() {
+    return concurrencyMode;
   }
 
   @Override
@@ -162,12 +192,18 @@ public class EdmProperty extends EdmPropertyBase {
     private String defaultValue;
     private Integer precision;
     private Integer scale;
+    private String collation;
 
     private String fcTargetPath;
     private String fcContentKind;
     private String fcKeepInContent;
     private String fcEpmContentKind;
     private String fcEpmKeepInContent;
+    private String fcNsPrefix;
+    private String fcNsUri;
+
+    private String mimeType;
+    private String concurrencyMode;
 
     private EdmProperty builtProperty;
 
@@ -179,7 +215,7 @@ public class EdmProperty extends EdmPropertyBase {
     Builder newBuilder(EdmProperty property, BuilderContext context) {
       this.declaringType = property.declaringType;
       this.type = property.type;
-      if (null != type) {
+      if (type != null) {
         if (!type.isSimple()) {
           // we want to use the re-built version of this type, not the original object
           this.typeBuilder = EdmType.newDeferredBuilder(type.getFullyQualifiedTypeName(), context.getDataServices());
@@ -195,12 +231,17 @@ public class EdmProperty extends EdmPropertyBase {
       this.defaultValue = property.defaultValue;
       this.precision = property.precision;
       this.scale = property.scale;
+      this.collation = property.collation;
 
       this.fcTargetPath = property.fcTargetPath;
       this.fcContentKind = property.fcContentKind;
       this.fcKeepInContent = property.fcKeepInContent;
       this.fcEpmContentKind = property.fcEpmContentKind;
       this.fcEpmKeepInContent = property.fcEpmKeepInContent;
+      this.fcNsPrefix = property.fcNsPrefix;
+      this.fcNsUri = property.fcNsUri;
+      this.mimeType = property.mimeType;
+      this.concurrencyMode = property.concurrencyMode;
       return this;
     }
 
@@ -208,9 +249,10 @@ public class EdmProperty extends EdmPropertyBase {
       if (builtProperty == null) {
         EdmType type = this.type != null ? this.type : typeBuilder.build();
         builtProperty = new EdmProperty(getDocumentation(), ImmutableList.copyOf(getAnnotations()),
-            getName(), declaringType, type, nullable, maxLength, unicode, fixedLength, storeGeneratedPattern,
-            fcTargetPath, fcContentKind, fcKeepInContent, fcEpmContentKind, fcEpmKeepInContent, collectionKind,
-            defaultValue, precision, scale);
+            ImmutableList.copyOf(getAnnotationElements()), getName(), declaringType, type, nullable, maxLength, unicode,
+            fixedLength, storeGeneratedPattern,
+            concurrencyMode, fcTargetPath, fcContentKind, fcKeepInContent, fcEpmContentKind, fcEpmKeepInContent, fcNsPrefix,
+            fcNsUri, collectionKind, defaultValue, precision, scale, collation, mimeType);
       }
       return builtProperty;
     }
@@ -280,6 +322,16 @@ public class EdmProperty extends EdmPropertyBase {
       return this;
     }
 
+    public Builder setFcNsPrefix(String fcNsPrefix) {
+      this.fcNsPrefix = fcNsPrefix;
+      return this;
+    }
+
+    public Builder setFcNsUri(String fcNsUri) {
+      this.fcNsUri = fcNsUri;
+      return this;
+    }
+
     public Builder setCollectionKind(CollectionKind collectionKind) {
       this.collectionKind = collectionKind;
       return this;
@@ -297,6 +349,21 @@ public class EdmProperty extends EdmPropertyBase {
 
     public Builder setScale(Integer scale) {
       this.scale = scale;
+      return this;
+    }
+
+    public Builder setCollation(String collation) {
+      this.collation = collation;
+      return this;
+    }
+
+    public Builder setMimeType(String mimeType) {
+      this.mimeType = mimeType;
+      return this;
+    }
+
+    public Builder setConcurrencyMode(String concurrencyMode) {
+      this.concurrencyMode = concurrencyMode;
       return this;
     }
 
@@ -340,6 +407,10 @@ public class EdmProperty extends EdmPropertyBase {
       return scale;
     }
 
+    public String getCollation() {
+      return collation;
+    }
+
     public String getFcTargetPath() {
       return fcTargetPath;
     }
@@ -358,6 +429,22 @@ public class EdmProperty extends EdmPropertyBase {
 
     public String getFcEpmKeepInContent() {
       return fcEpmKeepInContent;
+    }
+
+    public String getFcNsPrefix() {
+      return fcNsPrefix;
+    }
+
+    public String getFcNsUri() {
+      return fcNsUri;
+    }
+
+    public String getMimeType() {
+      return mimeType;
+    }
+
+    public String getConcurrencyMode() {
+      return concurrencyMode;
     }
 
   }

@@ -5,6 +5,7 @@ import java.util.Map;
 import org.odata4j.core.OEntity;
 import org.odata4j.core.OEntityId;
 import org.odata4j.core.OEntityKey;
+import org.odata4j.core.OExtensible;
 import org.odata4j.core.OFunctionParameter;
 import org.odata4j.edm.EdmDataServices;
 import org.odata4j.edm.EdmFunctionImport;
@@ -18,7 +19,7 @@ import org.odata4j.producer.edm.MetadataProducer;
  *
  * <p>Note that all client requests/responses are normalized - all details involving the OData http protocol, query expression model, EDM structure are handled by odata4j at a higher level.</p>
  */
-public interface ODataProducer {
+public interface ODataProducer extends OExtensible<ODataProducer> {
 
   /**
    * Obtains the service metadata for this producer.
@@ -42,7 +43,7 @@ public interface ODataProducer {
    * @param queryInfo  the additional constraints to apply to the entities
    * @return a packaged collection of entities to pass back to the client
    */
-  EntitiesResponse getEntities(String entitySetName, QueryInfo queryInfo);
+  EntitiesResponse getEntities(ODataContext context, String entitySetName, QueryInfo queryInfo);
 
   /**
    * Gets the count of all the entities for a given set matching the query information.
@@ -51,7 +52,7 @@ public interface ODataProducer {
    * @param queryInfo  the additional constraints to apply to the entities
    * @return count of the entities
    */
-  CountResponse getEntitiesCount(String entitySetName, QueryInfo queryInfo);
+  CountResponse getEntitiesCount(ODataContext context, String entitySetName, QueryInfo queryInfo);
 
   /**
    * Obtains a single entity based on its type and key.
@@ -61,7 +62,7 @@ public interface ODataProducer {
    * @param queryInfo  the additional constraints applicable to single-entity queries
    * @return the resulting entity
    */
-  EntityResponse getEntity(String entitySetName, OEntityKey entityKey, EntityQueryInfo queryInfo);
+  EntityResponse getEntity(ODataContext context, String entitySetName, OEntityKey entityKey, EntityQueryInfo queryInfo);
 
   /**
    * Given a specific entity, follow one of its navigation properties, applying constraints as appropriate.
@@ -73,7 +74,7 @@ public interface ODataProducer {
    * @param queryInfo  additional constraints to apply to the result
    * @return the resulting entity, entities, or property value
    */
-  BaseResponse getNavProperty(String entitySetName, OEntityKey entityKey, String navProp, QueryInfo queryInfo);
+  BaseResponse getNavProperty(ODataContext context, String entitySetName, OEntityKey entityKey, String navProp, QueryInfo queryInfo);
 
   /**
    * Given a specific entity, follow one of its navigation properties, applying constraints as appropriate.
@@ -85,7 +86,7 @@ public interface ODataProducer {
    * @param queryInfo  additional constraints to apply to the result
    * @return the count of the resulting entities
    */
-  CountResponse getNavPropertyCount(String entitySetName, OEntityKey entityKey, String navProp, QueryInfo queryInfo);
+  CountResponse getNavPropertyCount(ODataContext context, String entitySetName, OEntityKey entityKey, String navProp, QueryInfo queryInfo);
 
   /**
    * Releases any resources managed by this producer.
@@ -101,7 +102,7 @@ public interface ODataProducer {
    *
    * @see <a href="http://www.odata.org/developers/protocols/operations#CreatingnewEntries">[odata.org] Creating new Entries</a>
    */
-  EntityResponse createEntity(String entitySetName, OEntity entity);
+  EntityResponse createEntity(ODataContext context, String entitySetName, OEntity entity);
 
   /**
    * Creates a new OData entity as a reference of an existing entity, implicitly linked to the existing entity by a navigation property.
@@ -114,7 +115,7 @@ public interface ODataProducer {
    *
    * @see <a href="http://www.odata.org/developers/protocols/operations#CreatingnewEntries">[odata.org] Creating new Entries</a>
    */
-  EntityResponse createEntity(String entitySetName, OEntityKey entityKey, String navProp, OEntity entity);
+  EntityResponse createEntity(ODataContext context, String entitySetName, OEntityKey entityKey, String navProp, OEntity entity);
 
   /**
    * Deletes an existing entity.
@@ -124,7 +125,7 @@ public interface ODataProducer {
    *
    * @see <a href="http://www.odata.org/developers/protocols/operations#DeletingEntries">[odata.org] Deleting Entries</a>
    */
-  void deleteEntity(String entitySetName, OEntityKey entityKey);
+  void deleteEntity(ODataContext context, String entitySetName, OEntityKey entityKey);
 
   /**
    * Modifies an existing entity using merge semantics.
@@ -134,7 +135,7 @@ public interface ODataProducer {
    *
    * @see <a href="http://www.odata.org/developers/protocols/operations#UpdatingEntries">[odata.org] Updating Entries</a>
    */
-  void mergeEntity(String entitySetName, OEntity entity);
+  void mergeEntity(ODataContext context, String entitySetName, OEntity entity);
 
   /**
    * Modifies an existing entity using update semantics.
@@ -144,7 +145,7 @@ public interface ODataProducer {
    *
    * @see <a href="http://www.odata.org/developers/protocols/operations#UpdatingEntries">[odata.org] Updating Entries</a>
    */
-  void updateEntity(String entitySetName, OEntity entity);
+  void updateEntity(ODataContext context, String entitySetName, OEntity entity);
 
   /**
    * Returns the value of an entity's navigation property as a collection of entity links (or a single link if the association cardinality is 1).
@@ -153,7 +154,7 @@ public interface ODataProducer {
    * @param targetNavProp  the navigation property
    * @return a collection of entity links (or a single link if the association cardinality is 1)
    */
-  EntityIdResponse getLinks(OEntityId sourceEntity, String targetNavProp);
+  EntityIdResponse getLinks(ODataContext context, OEntityId sourceEntity, String targetNavProp);
 
   /**
    * Creates a link between two entities.
@@ -164,7 +165,7 @@ public interface ODataProducer {
    *
    * @see <a href="http://www.odata.org/developers/protocols/operations#CreatingLinksbetweenEntries">[odata.org] Creating Links between Entries</a>
    */
-  void createLink(OEntityId sourceEntity, String targetNavProp, OEntityId targetEntity);
+  void createLink(ODataContext context, OEntityId sourceEntity, String targetNavProp, OEntityId targetEntity);
 
   /**
    * Replaces an existing link between two entities.
@@ -176,7 +177,7 @@ public interface ODataProducer {
    *
    * @see <a href="http://www.odata.org/developers/protocols/operations#ReplacingLinksbetweenEntries">[odata.org] Replacing Links between Entries</a>
    */
-  void updateLink(OEntityId sourceEntity, String targetNavProp, OEntityKey oldTargetEntityKey, OEntityId newTargetEntity);
+  void updateLink(ODataContext context, OEntityId sourceEntity, String targetNavProp, OEntityKey oldTargetEntityKey, OEntityId newTargetEntity);
 
   /**
    * Deletes an existing link between two entities.
@@ -185,10 +186,10 @@ public interface ODataProducer {
    * @param targetNavProp  the navigation property
    * @param targetEntityKey  if the navigation property represents a set, the key identifying the target entity within the set, else n/a
    */
-  void deleteLink(OEntityId sourceEntity, String targetNavProp, OEntityKey targetEntityKey);
+  void deleteLink(ODataContext context, OEntityId sourceEntity, String targetNavProp, OEntityKey targetEntityKey);
 
   /**
-   * Call a function (aka Service Operation)
+   * Calls a function (aka Service Operation).
    *
    * @param name  the name of the function
    * @param params  the parameters to the function
@@ -205,5 +206,5 @@ public interface ODataProducer {
    *        &lt;ReturnType&gt; can contain a maximum of one &lt;RowType&gt; element.
    *        A ref type or collection of ref types.</pre>
    */
-  BaseResponse callFunction(EdmFunctionImport name, Map<String, OFunctionParameter> params, QueryInfo queryInfo);
+  BaseResponse callFunction(ODataContext context, EdmFunctionImport name, Map<String, OFunctionParameter> params, QueryInfo queryInfo);
 }

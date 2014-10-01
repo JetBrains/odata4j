@@ -8,16 +8,22 @@ import org.odata4j.edm.EdmDataServices;
 import org.odata4j.format.json.JsonCollectionFormatWriter;
 import org.odata4j.format.json.JsonComplexObjectFormatWriter;
 import org.odata4j.format.json.JsonEntryFormatWriter;
+import org.odata4j.format.json.JsonErrorFormatWriter;
 import org.odata4j.format.json.JsonFeedFormatWriter;
 import org.odata4j.format.json.JsonPropertyFormatWriter;
 import org.odata4j.format.json.JsonRequestEntryFormatWriter;
 import org.odata4j.format.json.JsonServiceDocumentFormatWriter;
+import org.odata4j.format.json.JsonSimpleFormatWriter;
 import org.odata4j.format.json.JsonSingleLinkFormatWriter;
 import org.odata4j.format.json.JsonSingleLinksFormatWriter;
+import org.odata4j.format.xml.AtomCollectionFormatWriter;
+import org.odata4j.format.xml.AtomComplexFormatWriter;
 import org.odata4j.format.xml.AtomEntryFormatWriter;
+import org.odata4j.format.xml.AtomErrorFormatWriter;
 import org.odata4j.format.xml.AtomFeedFormatWriter;
 import org.odata4j.format.xml.AtomRequestEntryFormatWriter;
 import org.odata4j.format.xml.AtomServiceDocumentFormatWriter;
+import org.odata4j.format.xml.AtomSimpleFormatWriter;
 import org.odata4j.format.xml.AtomSingleLinkFormatWriter;
 import org.odata4j.format.xml.AtomSingleLinksFormatWriter;
 import org.odata4j.format.xml.XmlPropertyFormatWriter;
@@ -25,8 +31,9 @@ import org.odata4j.producer.CollectionResponse;
 import org.odata4j.producer.ComplexObjectResponse;
 import org.odata4j.producer.EntitiesResponse;
 import org.odata4j.producer.EntityResponse;
+import org.odata4j.producer.ErrorResponse;
 import org.odata4j.producer.PropertyResponse;
-import org.odata4j.producer.exceptions.NotImplementedException;
+import org.odata4j.producer.SimpleResponse;
 
 public class FormatWriterFactory {
 
@@ -40,6 +47,8 @@ public class FormatWriterFactory {
 
     FormatWriter<PropertyResponse> getPropertyFormatWriter();
 
+    FormatWriter<SimpleResponse> getSimpleFormatWriter();
+
     FormatWriter<Entry> getRequestEntryFormatWriter();
 
     FormatWriter<SingleLink> getSingleLinkFormatWriter();
@@ -49,6 +58,8 @@ public class FormatWriterFactory {
     FormatWriter<ComplexObjectResponse> getComplexObjectFormatWriter();
 
     FormatWriter<CollectionResponse<?>> getCollectionFormatWriter();
+
+    FormatWriter<ErrorResponse> getErrorFormatWriter();
   }
 
   @SuppressWarnings("unchecked")
@@ -63,7 +74,7 @@ public class FormatWriterFactory {
     // if header accepts json, use that
     if (type == null && acceptTypes != null) {
       for (MediaType acceptType : acceptTypes) {
-        if (acceptType.equals(MediaType.APPLICATION_JSON_TYPE)) {
+        if (isApplicationJsonWithParametersIgnored(acceptType)) {
           type = FormatType.JSON;
           break;
         }
@@ -88,6 +99,9 @@ public class FormatWriterFactory {
     if (targetType.equals(PropertyResponse.class))
       return (FormatWriter<T>) formatWriters.getPropertyFormatWriter();
 
+    if (targetType.equals(SimpleResponse.class))
+      return (FormatWriter<T>) formatWriters.getSimpleFormatWriter();
+
     if (Entry.class.isAssignableFrom(targetType))
       return (FormatWriter<T>) formatWriters.getRequestEntryFormatWriter();
 
@@ -97,16 +111,22 @@ public class FormatWriterFactory {
     if (SingleLinks.class.isAssignableFrom(targetType))
       return (FormatWriter<T>) formatWriters.getSingleLinksFormatWriter();
 
-    if (targetType.equals(ComplexObjectResponse.class)) {
+    if (targetType.equals(ComplexObjectResponse.class))
       return (FormatWriter<T>) formatWriters.getComplexObjectFormatWriter();
-    }
 
-    if (targetType.equals(CollectionResponse.class)) {
+    if (targetType.equals(CollectionResponse.class))
       return (FormatWriter<T>) formatWriters.getCollectionFormatWriter();
-    }
+
+    if (targetType.equals(ErrorResponse.class))
+      return (FormatWriter<T>) formatWriters.getErrorFormatWriter();
 
     throw new IllegalArgumentException("Unable to locate format writer for " + targetType.getName() + " and format " + type);
 
+  }
+
+  private static boolean isApplicationJsonWithParametersIgnored(MediaType acceptType) {
+    return acceptType.getType().equals(MediaType.APPLICATION_JSON_TYPE.getType()) &&
+        acceptType.getSubtype().equals(MediaType.APPLICATION_JSON_TYPE.getSubtype());
   }
 
   public static class JsonWriters implements FormatWriters {
@@ -138,6 +158,11 @@ public class FormatWriterFactory {
     }
 
     @Override
+    public FormatWriter<SimpleResponse> getSimpleFormatWriter() {
+      return new JsonSimpleFormatWriter(callback);
+    }
+
+    @Override
     public FormatWriter<Entry> getRequestEntryFormatWriter() {
       return new JsonRequestEntryFormatWriter(callback);
     }
@@ -160,6 +185,11 @@ public class FormatWriterFactory {
     @Override
     public FormatWriter<CollectionResponse<?>> getCollectionFormatWriter() {
       return new JsonCollectionFormatWriter(callback);
+    }
+
+    @Override
+    public FormatWriter<ErrorResponse> getErrorFormatWriter() {
+      return new JsonErrorFormatWriter(callback);
     }
   }
 
@@ -202,14 +232,23 @@ public class FormatWriterFactory {
 
     @Override
     public FormatWriter<ComplexObjectResponse> getComplexObjectFormatWriter() {
-      throw new NotImplementedException();
+      return new AtomComplexFormatWriter();
     }
 
     @Override
     public FormatWriter<CollectionResponse<?>> getCollectionFormatWriter() {
-      throw new NotImplementedException();
+      return new AtomCollectionFormatWriter();
     }
 
+    @Override
+    public FormatWriter<SimpleResponse> getSimpleFormatWriter() {
+      return new AtomSimpleFormatWriter();
+    }
+
+    @Override
+    public FormatWriter<ErrorResponse> getErrorFormatWriter() {
+      return new AtomErrorFormatWriter();
+    }
   }
 
 }

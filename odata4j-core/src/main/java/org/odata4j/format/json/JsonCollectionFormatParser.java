@@ -10,16 +10,20 @@ import org.odata4j.core.OObject;
 import org.odata4j.core.OSimpleObjects;
 import org.odata4j.edm.EdmCollectionType;
 import org.odata4j.edm.EdmDataServices;
+import org.odata4j.edm.EdmEntitySet;
+import org.odata4j.edm.EdmEntityType;
 import org.odata4j.edm.EdmSimpleType;
 import org.odata4j.edm.EdmType;
+import org.odata4j.exceptions.NotImplementedException;
+import org.odata4j.format.Entry;
 import org.odata4j.format.FormatParser;
 import org.odata4j.format.FormatParserFactory;
 import org.odata4j.format.FormatType;
 import org.odata4j.format.Settings;
+import org.odata4j.format.json.JsonFeedFormatParser.JsonFeed;
 import org.odata4j.format.json.JsonStreamReaderFactory.JsonStreamReader;
 import org.odata4j.format.json.JsonStreamReaderFactory.JsonStreamReader.JsonEvent;
 import org.odata4j.format.json.JsonStreamReaderFactory.JsonStreamReader.JsonValueEvent;
-import org.odata4j.producer.exceptions.NotImplementedException;
 
 /**
  * Parses an OCollection in JSON format.
@@ -48,6 +52,11 @@ public class JsonCollectionFormatParser extends JsonFormatParser implements Form
 
   @Override
   public OCollection<? extends OObject> parse(Reader reader) {
+
+    if (this.returnType.getItemType().getClass().isAssignableFrom(EdmEntityType.class)) {
+      return parseFunctionFeed(reader);
+    }
+
     JsonStreamReader jsr = JsonStreamReaderFactory.createJsonStreamReader(reader);
     try {
       if (isResponse) {
@@ -93,6 +102,32 @@ public class JsonCollectionFormatParser extends JsonFormatParser implements Form
     }
   }
 
+  protected OCollection<? extends OObject> parseFunctionFeed(Reader reader) {
+
+    // entitySetName is a function
+    // this really reveals a fundamental flaw in the parsers being driven by EdmEntitySets
+    // instead of EdmEntityTypes.
+
+    EdmEntitySet entitySet = this.metadata.getEdmEntitySet((EdmEntityType) returnType.getItemType());
+
+    Settings settings = new Settings(
+        // someone really needs to spend some time on service version negotiation....
+        ODataVersion.V2,
+        this.metadata,
+        entitySet.getName(),
+        this.entityKey,
+        this.isResponse,
+        this.returnType.getItemType());
+
+    JsonFeedFormatParser parser = new JsonFeedFormatParser(settings);
+    JsonFeed feed = parser.parse(reader);
+    OCollection.Builder<OObject> c = newCollectionBuilder();
+    for (Entry e : feed.getEntries()) {
+      c.add(e.getEntity());
+    }
+    return c.build();
+  }
+
   protected OCollection<? extends OObject> parseCollection(JsonStreamReader jsr) {
     // an array of objects:
     ensureNext(jsr);
@@ -115,7 +150,7 @@ public class JsonCollectionFormatParser extends JsonFormatParser implements Form
         if (parser instanceof JsonComplexObjectFormatParser) {
           OComplexObject obj = ((JsonComplexObjectFormatParser) parser).parseSingleObject(jsr);
           // null if not there
-          if (null != obj) {
+          if (obj != null) {
             c = c.add(obj);
           } else {
             break;
@@ -157,7 +192,6 @@ public class JsonCollectionFormatParser extends JsonFormatParser implements Form
         this.metadata,
         this.entitySetName,
         this.entityKey,
-        null, // FeedCustomizationMapping fcMapping,
         false, // boolean isResponse);
         edmType); // expected type
 

@@ -23,9 +23,7 @@ public class JsonStreamReaderFactory {
 
     private static final long serialVersionUID = 2362481232045271688L;
 
-    public JsonParseException() {
-      super();
-    }
+    public JsonParseException() {}
 
     public JsonParseException(String message, Throwable cause) {
       super(message, cause);
@@ -70,9 +68,11 @@ public class JsonStreamReaderFactory {
     }
 
     public static interface JsonEndPropertyEvent extends JsonEvent {
-      // returns a value if it is a simple property and 
+      // returns a value if it is a simple property and
       // not an other JsonObject or JsonArray
       String getValue();
+
+      JsonTokenType getValueTokenType();
     }
 
     public static interface JsonValueEvent extends JsonEvent {
@@ -85,10 +85,12 @@ public class JsonStreamReaderFactory {
 
     /**
      * returns the JsonEvent that the last call to nextEvent() returned.
-     * 
+     *
      * @return the last JsonEvent returned by nextEvent()
      */
     JsonEvent previousEvent();
+
+    void skipNestedEvents();
 
     void close();
   }
@@ -261,6 +263,10 @@ class JsonEndPropertyEventImpl extends JsonEventImpl implements JsonEndPropertyE
     return null;
   }
 
+  @Override
+  public JsonTokenType getValueTokenType() {
+    return null;
+  }
 }
 
 class JsonValueEventImpl extends JsonEventImpl implements JsonValueEvent {
@@ -397,7 +403,7 @@ class JsonStreamTokenizerImpl implements JsonStreamTokenizer {
       } else {
         if ('-' == c || Character.isDigit(c)
             || 'E' == c || 'e' == c
-            || '+' == c) {
+            || '+' == c || '.' == c) {
           buffer.append(c); // a valid character in a number
         } else {
           // must be done with the number.
@@ -499,6 +505,11 @@ enum ReaderState {
 }
 
 class JsonStreamReaderImpl implements JsonStreamReader {
+  private static final boolean DUMP = false;
+
+  private static void dump(String msg) {
+    if (DUMP) System.out.println(msg);
+  }
 
   private JsonStreamTokenizerImpl tokenizer;
   private Stack<ReaderState> state = new Stack<ReaderState>();
@@ -525,7 +536,7 @@ class JsonStreamReaderImpl implements JsonStreamReader {
         throw new IllegalStateException("State is " + state.peek());
       }
       fireEndPropertyEvent = false;
-      return createEndPropertyEvent(null);
+      return createEndPropertyEvent(null, JsonTokenType.NULL);
     }
 
     if (hasNext()) {
@@ -571,9 +582,9 @@ class JsonStreamReaderImpl implements JsonStreamReader {
         case NUMBER:
         case TRUE:
         case FALSE:
-          return createEndPropertyEvent(token.value);
+          return createEndPropertyEvent(token.value, token.type);
         case NULL:
-          return createEndPropertyEvent(null);
+          return createEndPropertyEvent(null, token.type);
         case LEFT_CURLY_BRACKET:
           return createStartObjectEvent();
         case LEFT_BRACKET:
@@ -623,6 +634,7 @@ class JsonStreamReaderImpl implements JsonStreamReader {
 
   private JsonEvent createStartPropertyEvent(final String name) {
     state.push(ReaderState.PROPERTY);
+    dump("jsonp start property: " + name);
     this.previousEvent = new JsonStartPropertyEventImpl() {
 
       @Override
@@ -633,12 +645,19 @@ class JsonStreamReaderImpl implements JsonStreamReader {
     return this.previousEvent;
   }
 
-  private JsonEvent createEndPropertyEvent(final String value) {
+  private JsonEvent createEndPropertyEvent(final String value, final JsonTokenType valueTokenType) {
     state.pop();
+    dump("jsonp end property: " + value);
+
     this.previousEvent = new JsonEndPropertyEventImpl() {
       @Override
       public String getValue() {
         return value;
+      }
+
+      @Override
+      public JsonTokenType getValueTokenType() {
+        return valueTokenType;
       }
     };
     return this.previousEvent;
@@ -646,6 +665,8 @@ class JsonStreamReaderImpl implements JsonStreamReader {
 
   private JsonEvent createStartObjectEvent() {
     state.push(ReaderState.OBJECT);
+    dump("jsonp start object");
+
     expectCommaOrEndStack.push(expectCommaOrEnd);
     expectCommaOrEnd = false;
     this.previousEvent = new JsonEventImpl() {
@@ -659,10 +680,11 @@ class JsonStreamReaderImpl implements JsonStreamReader {
 
   private JsonEvent createEndObjectEvent() {
     state.pop();
+    dump("jsonp end object");
     expectCommaOrEnd = expectCommaOrEndStack.pop();
 
     // if the end of the object is also the of
-    // a property, we need to fire the 
+    // a property, we need to fire the
     //  endPropertyEvent before going forward.
     if (state.peek() == ReaderState.PROPERTY) {
       fireEndPropertyEvent = true;
@@ -679,6 +701,7 @@ class JsonStreamReaderImpl implements JsonStreamReader {
 
   private JsonEvent createStartArrayEvent() {
     state.push(ReaderState.ARRAY);
+    dump("jsonp start array");
     expectCommaOrEndStack.push(expectCommaOrEnd);
     expectCommaOrEnd = false;
     this.previousEvent = new JsonEventImpl() {
@@ -692,10 +715,11 @@ class JsonStreamReaderImpl implements JsonStreamReader {
 
   private JsonEvent createEndArrayEvent() {
     state.pop();
+    dump("jsonp end array");
     expectCommaOrEnd = expectCommaOrEndStack.pop();
 
     // if the end of the array is also the of
-    // a property, we need to fire the 
+    // a property, we need to fire the
     // endPropertyEvent before going forward.
     if (state.peek() == ReaderState.PROPERTY) {
       fireEndPropertyEvent = true;
@@ -711,6 +735,7 @@ class JsonStreamReaderImpl implements JsonStreamReader {
   }
 
   private JsonEvent createValueEvent(final String value) {
+    dump("jsonp value: " + value);
     this.previousEvent = new JsonValueEventImpl() {
       @Override
       public String getValue() {
@@ -721,13 +746,24 @@ class JsonStreamReaderImpl implements JsonStreamReader {
   }
 
   @Override
-  public void close() {
-    tokenizer.close();
+  public JsonEvent previousEvent() {
+    return previousEvent;
   }
 
   @Override
-  public JsonEvent previousEvent() {
-    return previousEvent;
+  public void skipNestedEvents() {
+    if (!previousEvent.isStartProperty() && !previousEvent.isStartObject() && !previousEvent.isStartArray())
+      return;
+
+    // skip until stack element pushed by a start event has been removed by the corresponding end event
+    int stackSize = state.size();
+    while (hasNext() && state.size() >= stackSize)
+      nextEvent();
+  }
+
+  @Override
+  public void close() {
+    tokenizer.close();
   }
 
 }

@@ -1,10 +1,13 @@
 package org.odata4j.internal;
 
-import java.io.Reader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,106 +34,185 @@ import org.odata4j.core.ORelatedEntityLink;
 import org.odata4j.core.Throwables;
 import org.odata4j.edm.EdmEntitySet;
 import org.odata4j.producer.inmemory.BeanModel;
-import org.odata4j.stax2.XMLEventReader2;
-import org.odata4j.stax2.XMLFactoryProvider2;
-import org.odata4j.stax2.XMLInputFactory2;
 
 public class InternalUtil {
 
-  // Since not everybody seems to adhere to the spec, we are trying to be
-  // tolerant against different formats
-  // spec says:
-  // Edm.DateTime: yyyy-mm-ddThh:mm[:ss[.fffffff]]
-  // Edm.DateTimeOffset: yyyy-mm-ddThh:mm[:ss[.fffffff]](('+'|'-')hh':'mm)|'Z'
-  private static final Pattern DATETIME_PATTERN =
-      Pattern.compile("(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2})(:\\d{2})?(\\.\\d{1,7})?((?:(?:\\+|\\-)\\d{2}:\\d{2})|Z)?");
+  private static final Pattern DATETIME_XML_PATTERN = Pattern.compile("" +
+      "^" +
+      "(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2})" + // group 1 (datetime)
+      "(:\\d{2})?" + // group 2 (seconds)
+      "(\\.\\d{1,7})?" + // group 3 (nanoseconds)
+      "(Z)?" + // group 4 (tz, ignored - handles bad services)
+      "$");
 
-  private static final DateTimeFormatter[] DATETIME_PARSER = new DateTimeFormatter[] {
-      // formatter for parsing of dateTime and dateTimeOffset
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm"),
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss"),
-      null /* illegal format @see parseDateTime */,
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS"),
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mmZZ").withOffsetParsed(),
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ssZZ").withOffsetParsed(),
-      null /* illegal format @see parseDateTime */,
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZ").withOffsetParsed()
-  };
+  private static final Pattern DATETIMEOFFSET_XML_PATTERN = Pattern.compile("" +
+      "^" +
+      "(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2})" + // group 1 (datetime)
+      "(\\.\\d{1,7})?" + // group 2 (nanoSeconds)
+      "(((\\+|-)\\d{2}:\\d{2})|(Z))" + // group 3 (offset) / group 6 (utc)
+      "$");
 
-  private static final DateTimeFormatter[] DATETIME_FORMATTER = new DateTimeFormatter[] {
-      // formatter for formatting of dateTimeOffset
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm"),
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss"),
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS"),
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS"),
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mmZZ"),
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ssZZ"),
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZ"),
-      DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZ")
-  };
+  private static final Pattern DATETIME_JSON_PATTERN = Pattern.compile("" +
+      "^/Date\\(" +
+      "((\\+|-)?\\d+)" + // group 1 (ticks)
+      "((\\+|-)\\d{4})?" + // group 3 (offset)
+      "\\)/$");
 
-  public static DateTime parseDateTime(String value) {
-    Matcher matcher = DATETIME_PATTERN.matcher(value);
+  private static final DateTimeFormatter DATETIME_XML = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm");
+  private static final DateTimeFormatter DATETIME_WITH_SECONDS_XML = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
+  private static final DateTimeFormatter DATETIME_WITH_MILLIS_XML = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+
+  private static final DateTimeFormatter DATETIMEOFFSET_XML = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ssZZ");
+  private static final DateTimeFormatter DATETIMEOFFSET_WITH_MILLIS_XML = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+
+  private static final String DATETIME_JSON_SUFFIX = ")\\/\"";
+  private static final String DATETIME_JSON_PREFIX = "\"\\/Date(";
+
+  public static LocalDateTime parseDateTimeFromXml(String value) {
+    value = normalizeXmlValue(value);
+    Matcher matcher = DATETIME_XML_PATTERN.matcher(value);
 
     if (matcher.matches()) {
       String dateTime = matcher.group(1);
       String seconds = matcher.group(2);
       String nanoSeconds = matcher.group(3);
-      String timezone = matcher.group(4);
 
-      int idx = (seconds != null ? 1 : 0)
-          + (nanoSeconds != null ? 2 : 0)
-          + (timezone != null ? 4 : 0);
+      if (seconds == null && nanoSeconds != null)
+        throw new IllegalArgumentException("Illegal datetime format " + value);
 
-      StringBuilder valueToParse = new StringBuilder(dateTime);
-      if (seconds != null)
-        valueToParse.append(seconds);
+      if (seconds == null)
+        return DATETIME_XML.parseDateTime(dateTime).toLocalDateTime();
 
-      // we know only about milliseconds not nanoseconds
-      if (nanoSeconds != null) {
-        if (nanoSeconds.length() > 4) {
-          valueToParse.append(nanoSeconds.substring(0,
-              Math.min(nanoSeconds.length(), 4)));
-        } else {
-          valueToParse.append(nanoSeconds);
-        }
-      }
+      if (nanoSeconds == null)
+        return DATETIME_WITH_SECONDS_XML.parseDateTime(dateTime + seconds).toLocalDateTime();
 
-      if (timezone != null) {
-        if ("Z".equals(timezone)) {
-          timezone = "+00:00";
-        }
-        valueToParse.append(timezone);
-      }
+      if (nanoSeconds.length() <= 4)
+        return DATETIME_WITH_MILLIS_XML.parseDateTime(dateTime + seconds + nanoSeconds).toLocalDateTime();
 
-      DateTimeFormatter formatter = DATETIME_PARSER[idx];
-      if (formatter != null) {
-        return formatter.parseDateTime(valueToParse.toString());
-      }
+      return adjustMillis(DATETIME_WITH_MILLIS_XML.parseDateTime(dateTime + seconds + nanoSeconds.substring(0, 4)), nanoSeconds).toLocalDateTime();
     }
     throw new IllegalArgumentException("Illegal datetime format " + value);
   }
 
-  public static String formatDateTime(LocalDateTime dateTime) {
+  public static DateTime parseDateTimeOffsetFromXml(String value) {
+    value = normalizeXmlValue(value);
+    Matcher matcher = DATETIMEOFFSET_XML_PATTERN.matcher(value);
+
+    if (matcher.matches()) {
+      String dateTime = matcher.group(1);
+      String nanoSeconds = matcher.group(2);
+      String offset = matcher.group(3);
+      String utc = matcher.group(6);
+
+      if (utc != null)
+        if (utc.equals("Z"))
+          offset = "+00:00";
+        else
+          throw new IllegalArgumentException("Illegal datetimeoffset format " + value);
+
+      if (nanoSeconds == null)
+        return DATETIMEOFFSET_XML.withOffsetParsed().parseDateTime(dateTime + offset);
+
+      if (nanoSeconds.length() <= 4)
+        return DATETIMEOFFSET_WITH_MILLIS_XML.withOffsetParsed().parseDateTime(dateTime + nanoSeconds + offset);
+
+      return adjustMillis(DATETIMEOFFSET_WITH_MILLIS_XML.withOffsetParsed().parseDateTime(dateTime + nanoSeconds.substring(0, 4) + offset), nanoSeconds);
+    }
+    throw new IllegalArgumentException("Illegal datetimeoffset format " + value);
+  }
+
+  private static String normalizeXmlValue(String value) {
+    return value.replace("%3A", ":");
+  }
+
+  private static DateTime adjustMillis(final DateTime dateTime, final String nanoSeconds) {
+    return Math.round(Double.parseDouble("0." + nanoSeconds.substring(4))) == 0 ? dateTime : dateTime.plusMillis(1);
+  }
+
+  public static LocalDateTime parseDateTimeFromJson(String value) {
+    DateTime dateTime = parseDateString(value);
+    if (dateTime != null)
+      return dateTime.toLocalDateTime();
+    else
+      // required to support datajs clients (although not spec compliant)
+      return InternalUtil.parseDateTimeFromXml(value);
+  }
+
+  public static DateTime parseDateTimeOffsetFromJson(String value) {
+    DateTime dateTime = parseDateString(value);
+    if (dateTime != null)
+      return dateTime;
+    else
+      // required to support datajs clients (although not spec compliant)
+      return InternalUtil.parseDateTimeOffsetFromXml(value);
+  }
+
+  private static DateTime parseDateString(String value) {
+    Matcher matcher = DATETIME_JSON_PATTERN.matcher(value);
+    if (matcher.matches()) {
+      String ticksString = matcher.group(1);
+      long ticks = Long.valueOf(ticksString.replace("+", ""));
+      String offsetString = matcher.group(3);
+      if (offsetString != null) {
+        int offset = Integer.valueOf(offsetString.replace("+", ""));
+        return new DateTime(ticks, DateTimeZone.forOffsetHoursMinutes(offset / 60, offset % 60)).plusMinutes(offset);
+      } else {
+        return new DateTime(ticks, DateTimeZone.UTC);
+      }
+    }
+    return null;
+  }
+
+  public static LocalTime parseTime(String value) {
+    Period period = ISOPeriodFormat.standard().parsePeriod(value);
+    return new LocalTime(period.toStandardDuration().getMillis(), DateTimeZone.UTC);
+  }
+
+  public static String formatDateTimeForXml(LocalDateTime localDateTime) {
+    if (localDateTime == null)
+      return null;
+
+    if (localDateTime.getMillisOfSecond() != 0)
+      return localDateTime.toString(DATETIME_WITH_MILLIS_XML);
+    else if (localDateTime.getSecondOfMinute() != 0)
+      return localDateTime.toString(DATETIME_WITH_SECONDS_XML);
+    else
+      return localDateTime.toString(DATETIME_XML);
+  }
+
+  public static String formatDateTimeOffsetForXml(DateTime dateTime) {
     if (dateTime == null)
       return null;
 
-    int idx = dateTime.getMillisOfSecond() > 0 ? 2 : 1;
-    return dateTime.toString(DATETIME_FORMATTER[idx]);
+    String result;
+    if (dateTime.getMillisOfSecond() != 0)
+      result = dateTime.toString(DATETIMEOFFSET_WITH_MILLIS_XML);
+    else
+      result = dateTime.toString(DATETIMEOFFSET_XML);
+
+    return result.replaceFirst("(\\+|-)00:00$", "Z");
   }
 
-  public static String formatDateTimeOffset(DateTime dateTime) {
-    if (dateTime == null)
-      return null;
-
-    int idx = 4 + (dateTime.getMillisOfSecond() > 0 ? 2 : 1);
-    return dateTime.toString(DATETIME_FORMATTER[idx]);
+  public static String formatDateTimeForJson(LocalDateTime localDateTime) {
+    return DATETIME_JSON_PREFIX + localDateTime.toDateTime(DateTimeZone.UTC).getMillis() + DATETIME_JSON_SUFFIX;
   }
 
-  public static XMLEventReader2 newXMLEventReader(Reader reader) {
-    XMLInputFactory2 f = XMLFactoryProvider2.getInstance()
-        .newXMLInputFactory2();
-    return f.createXMLEventReader(reader);
+  public static String formatDateTimeOffsetForJson(DateTime dateTime) {
+    long millis = dateTime.getMillis();
+    int offsetInMillis = dateTime.getZone().getOffset(millis);
+    return DATETIME_JSON_PREFIX + (millis - offsetInMillis) + String.format(Locale.US, "%+05d", offsetInMillis / 1000 / 60) + DATETIME_JSON_SUFFIX;
+  }
+
+  public static String formatTimeForXml(LocalTime localTime) {
+    return ISOPeriodFormat.standard().print(new Period(localTime.getMillisOfDay()));
+  }
+
+  public static String formatTimeForJson(LocalTime localTime) {
+    return "\"" + formatTimeForXml(localTime) + "\"";
+  }
+
+  public static String toString(DateTime utc) {
+    return utc.toString("yyyy-MM-dd'T'HH:mm:ss'Z'");
   }
 
   public static String reflectionToString(final Object obj) {
@@ -253,19 +335,6 @@ public class InternalUtil {
     return entitySet.getName() + key;
   }
 
-  public static String toString(DateTime utc) {
-    return utc.toString("yyyy-MM-dd'T'HH:mm:ss'Z'");
-  }
-
-  public static LocalTime parseTime(String value) {
-    Period period = ISOPeriodFormat.standard().parsePeriod(value);
-    return new LocalTime(period.toStandardDuration().getMillis(), DateTimeZone.UTC);
-  }
-
-  public static String toString(LocalTime time) {
-    return ISOPeriodFormat.standard().print(new Period(time.getMillisOfDay()));
-  }
-
   public static void sleep(long millis) {
     try {
       Thread.sleep(millis);
@@ -283,4 +352,14 @@ public class InternalUtil {
     return version;
   }
 
+  public static final int COPY_BUFFER_SIZE = 8 * 1024;
+
+  public static void copyInputToOutput(InputStream inStream, OutputStream outStream) throws IOException {
+    byte[] buf = new byte[COPY_BUFFER_SIZE];
+    int n;
+    while ((n = inStream.read(buf)) != -1) {
+      outStream.write(buf, 0, n);
+    }
+    outStream.flush();
+  }
 }

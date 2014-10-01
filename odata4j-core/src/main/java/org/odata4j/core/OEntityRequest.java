@@ -1,5 +1,7 @@
 package org.odata4j.core;
 
+import org.odata4j.exceptions.ODataProducerException;
+
 /**
  * A consumer-side entity-request builder, used for operations on a single entity such as DELETE.  Call {@link #execute()} to issue the request.
  *
@@ -11,8 +13,9 @@ public interface OEntityRequest<T> {
    * Sends the entity-request to the OData service and returns the response.
    *
    * @return the operation response
+   * @throws ODataProducerException  error from the producer
    */
-  T execute();
+  T execute() throws ODataProducerException;
 
   /**
    * Navigates to a related entity using a collection navigation property.

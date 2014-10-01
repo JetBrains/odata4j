@@ -8,14 +8,16 @@ import org.odata4j.core.OCollection;
 import org.odata4j.core.OComplexObject;
 import org.odata4j.core.OEntity;
 import org.odata4j.core.OEntityId;
+import org.odata4j.core.OError;
 import org.odata4j.core.OObject;
 import org.odata4j.core.OProperty;
 import org.odata4j.edm.EdmEntitySet;
 import org.odata4j.edm.EdmMultiplicity;
+import org.odata4j.edm.EdmSimpleType;
 
 /**
  * A static factory to create immutable {@link EntitiesResponse}, {@link EntityResponse}, {@link PropertyResponse}, {@link EntityIdResponse},
- * {@link ComplexObjectResponse}, or {@link CollectionResponse} instances.
+ * {@link ComplexObjectResponse}, {@link CollectionResponse}, or {@link ErrorResponse} instances.
  */
 public class Responses {
 
@@ -98,6 +100,48 @@ public class Responses {
     };
   }
 
+  public static SimpleResponse simple(final EdmSimpleType<?> type, final Object value) {
+    return new SimpleResponse() {
+
+      @Override
+      public EdmSimpleType<?> getType() {
+        return type;
+      }
+
+      @Override
+      public Object getValue() {
+        return value;
+      }
+
+      @Override
+      public String getName() {
+        return null;
+      }
+
+    };
+  }
+
+  public static SimpleResponse simple(final EdmSimpleType<?> type, final String name, final Object value) {
+    return new SimpleResponse() {
+
+      @Override
+      public EdmSimpleType<?> getType() {
+        return type;
+      }
+
+      @Override
+      public Object getValue() {
+        return value;
+      }
+
+      @Override
+      public String getName() {
+        return name;
+      }
+
+    };
+  }
+
   /**
    * Creates a new <code>EntityIdResponse</code> instance for payloads with a cardinality of {@link EdmMultiplicity#ONE}.
    *
@@ -151,11 +195,16 @@ public class Responses {
    * @param complexObject  the complex object
    * @return a new <code>ComplexObjectResponse</code> instance
    */
-  public static ComplexObjectResponse complexObject(final OComplexObject complexObject) {
+  public static ComplexObjectResponse complexObject(final OComplexObject complexObject, final String complexObjectName) {
     return new ComplexObjectResponse() {
       @Override
       public OComplexObject getObject() {
         return complexObject;
+      }
+
+      @Override
+      public String getComplexObjectName() {
+        return complexObjectName;
       }
     };
   }
@@ -167,12 +216,63 @@ public class Responses {
    * @return a new <code>ComplexObjectResponse</code> instance
    */
   public static <T extends OObject> CollectionResponse<?> collection(final OCollection<T> collection) {
+    return collection(collection, null, null, null, null);
+  }
+
+  /**
+   * Creates a new <code>CollectionResponse</code> instance.
+   *
+   * @param collection  the collection
+   * @return a new <code>ComplexObjectResponse</code> instance
+   */
+  public static <T extends OObject> CollectionResponse<?> collection(
+      final OCollection<T> collection,
+      final EdmEntitySet entitySet,
+      final Integer inlineCount,
+      final String skipToken,
+      final String collectionName) {
+
     return new CollectionResponse<T>() {
+
       @Override
       public OCollection<T> getCollection() {
         return collection;
       }
+
+      @Override
+      public String getCollectionName() {
+        return collectionName;
+      }
+
+      public Integer getInlineCount() {
+        return inlineCount;
+      }
+
+      @Override
+      public String getSkipToken() {
+        return skipToken;
+      }
+
+      @Override
+      public EdmEntitySet getEntitySet() {
+        return entitySet;
+      }
     };
   }
 
+  /**
+   * Creates a new <code>ErrorResponse</code> instance.
+   *
+   * @param error  the OData error
+   * @return a new <code>ErrorResponse</code> instance
+   */
+  public static ErrorResponse error(final OError error) {
+    return new ErrorResponse() {
+
+      @Override
+      public OError getError() {
+        return error;
+      }
+    };
+  }
 }

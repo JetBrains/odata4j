@@ -11,19 +11,20 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Providers;
 
 import org.odata4j.core.ODataConstants;
 import org.odata4j.edm.EdmDataServices;
+import org.odata4j.exceptions.NotImplementedException;
 import org.odata4j.format.FormatType;
 import org.odata4j.format.xml.EdmxFormatWriter;
 import org.odata4j.producer.ODataProducer;
 import org.odata4j.producer.edm.MetadataProducer;
-import org.odata4j.producer.exceptions.NotImplementedException;
 
 @Path("{first: \\$}metadata")
-public class MetadataResource {
+public class MetadataResource extends BaseResource {
 
   private static final MediaType APPLICATION_ATOMSVC_XML_MEDIATYPE = MediaType.valueOf(ODataConstants.APPLICATION_ATOMSVC_XML);
 
@@ -32,10 +33,10 @@ public class MetadataResource {
   public Response getMetadata(
       @Context HttpHeaders httpHeaders,
       @Context UriInfo uriInfo,
-      @Context ContextResolver<ODataProducer> producerResolver,
+      @Context Providers providers,
       @QueryParam("$format") String format) {
 
-    ODataProducer producer = producerResolver.getContext(ODataProducer.class);
+    ODataProducer producer = getODataProducer(providers);
 
     // a request for media type atomsvc+xml means give me the service document of the metadata producer
     if ("atomsvc".equals(format) || isAtomSvcRequest(httpHeaders)) {
@@ -44,7 +45,7 @@ public class MetadataResource {
         throw newMetadataNotImplementedException();
       }
       ServiceDocumentResource r = new ServiceDocumentResource();
-      return r.getServiceDocument(httpHeaders, uriInfo, producerResolver, FormatType.ATOM.name(), null);
+      return r.getServiceDocument(httpHeaders, uriInfo, providers, FormatType.ATOM.name(), null);
     } else {
       StringWriter w = new StringWriter();
       ODataProducer source = "metamodel".equals(format) ? producer.getMetadataProducer() : producer;
@@ -72,7 +73,8 @@ public class MetadataResource {
   public Response getMetadataEntities(
       @Context HttpHeaders httpHeaders,
       @Context UriInfo uriInfo,
-      @Context ContextResolver<ODataProducer> producerResolver,
+      @Context Providers providers,
+      @Context SecurityContext securityContext,
       @PathParam("entitySetName") String entitySetName,
       @PathParam("optionalId") String optionalId,
       @QueryParam("$inlinecount") String inlineCount,
@@ -86,7 +88,7 @@ public class MetadataResource {
       @QueryParam("$expand") String expand,
       @QueryParam("$select") String select) throws Exception {
 
-    ODataProducer producer = producerResolver.getContext(ODataProducer.class);
+    ODataProducer producer = getODataProducer(providers);
 
     MetadataProducer metadataProducer = producer.getMetadataProducer();
     if (metadataProducer == null) {
@@ -94,7 +96,7 @@ public class MetadataResource {
     }
 
     EntitiesRequestResource r = new EntitiesRequestResource();
-    return r.getEntitiesImpl(httpHeaders, uriInfo, metadataProducer, entitySetName, false, inlineCount, top, skip, filter, orderBy, format, callback, skipToken, expand, select);
+    return r.getEntitiesImpl(httpHeaders, uriInfo, securityContext, metadataProducer, entitySetName, false, inlineCount, top, skip, filter, orderBy, format, callback, skipToken, expand, select);
   }
 
   @GET
@@ -105,7 +107,8 @@ public class MetadataResource {
   public Response getMetadataEntity(
       @Context HttpHeaders httpHeaders,
       @Context UriInfo uriInfo,
-      @Context ContextResolver<ODataProducer> producerResolver,
+      @Context Providers providers,
+      @Context SecurityContext securityContext,
       @PathParam("entitySetName") String entitySetName,
       @PathParam("id") String id,
       @QueryParam("$format") String format,
@@ -113,7 +116,7 @@ public class MetadataResource {
       @QueryParam("$expand") String expand,
       @QueryParam("$select") String select) {
 
-    ODataProducer producer = producerResolver.getContext(ODataProducer.class);
+    ODataProducer producer = getODataProducer(providers);
 
     MetadataProducer metadataProducer = producer.getMetadataProducer();
     if (metadataProducer == null) {
@@ -121,7 +124,7 @@ public class MetadataResource {
     }
 
     EntityRequestResource r = new EntityRequestResource();
-    return r.getEntityImpl(httpHeaders, uriInfo, metadataProducer, entitySetName, id, format, callback, expand, select);
+    return r.getEntityImpl(httpHeaders, uriInfo, securityContext, metadataProducer, entitySetName, id, format, callback, expand, select);
   }
 
   private static NotImplementedException newMetadataNotImplementedException() {

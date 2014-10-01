@@ -4,13 +4,13 @@ import org.odata4j.expression.OrderByExpression.Direction;
 import org.odata4j.internal.InternalUtil;
 import org.odata4j.repack.org.apache.commons.codec.binary.Hex;
 
-public class PrintExpressionVisitor implements ExpressionVisitor {
+public class PrintExpressionVisitor extends PreOrderVisitor {
 
   private final StringBuilder sb = new StringBuilder();
 
   public static String asString(CommonExpression expr) {
     PrintExpressionVisitor v = new PrintExpressionVisitor();
-    expr.visit(v);
+    v.visitNode(expr);
     return v.toString();
   }
 
@@ -77,12 +77,12 @@ public class PrintExpressionVisitor implements ExpressionVisitor {
 
   @Override
   public void visit(DateTimeLiteral expr) {
-    append("datetime(%s)", InternalUtil.formatDateTime(expr.getValue()));
+    append("datetime(%s)", InternalUtil.formatDateTimeForXml(expr.getValue()));
   }
 
   @Override
   public void visit(DateTimeOffsetLiteral expr) {
-    append("datetime(%s)", InternalUtil.formatDateTimeOffset(expr.getValue()));
+    append("datetime(%s)", InternalUtil.formatDateTimeOffsetForXml(expr.getValue()));
   }
 
   @Override
@@ -337,7 +337,7 @@ public class PrintExpressionVisitor implements ExpressionVisitor {
 
   @Override
   public void visit(AggregateAnyFunction expr) {
-    if (null != expr.getVariable()) {
+    if (expr.getVariable() != null) {
       append("any:(%s =>)", expr.getVariable());
     } else {
       append("any()");
