@@ -1,36 +1,6 @@
 package org.odata4j.producer.resources;
 
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.net.URI;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.Providers;
-
-import org.odata4j.core.Guid;
-import org.odata4j.core.ODataConstants;
-import org.odata4j.core.ODataHttpMethod;
-import org.odata4j.core.ODataVersion;
-import org.odata4j.core.OEntity;
+import org.odata4j.core.*;
 import org.odata4j.edm.EdmDataServices;
 import org.odata4j.edm.EdmEntitySet;
 import org.odata4j.exceptions.NotFoundException;
@@ -38,13 +8,18 @@ import org.odata4j.exceptions.UnsupportedMediaTypeException;
 import org.odata4j.format.FormatWriter;
 import org.odata4j.format.FormatWriterFactory;
 import org.odata4j.internal.InternalUtil;
-import org.odata4j.producer.CountResponse;
-import org.odata4j.producer.EntitiesResponse;
-import org.odata4j.producer.EntityResponse;
-import org.odata4j.producer.ODataContext;
-import org.odata4j.producer.ODataContextImpl;
-import org.odata4j.producer.ODataProducer;
-import org.odata4j.producer.QueryInfo;
+import org.odata4j.producer.*;
+
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.ext.Providers;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.net.URI;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 // ignoreParens below is there to trim the parentheses from the entity set name when they are present - e.g. '/my.svc/Users()'.
 @Path("{entitySetName: [^/()]+?}{ignoreParens: (?:\\(\\))?}")
@@ -111,7 +86,7 @@ public class EntitiesRequestResource extends BaseResource {
 
     // also on the plus side we can now parse the stream directly off the wire....
     return createEntity(httpHeaders, uriInfo, securityContext, producer, entitySetName,
-        this.getRequestEntity(httpHeaders, uriInfo, payload, producer.getMetadata(), entitySetName, null), odataContext);
+            this.getRequestEntity(httpHeaders, uriInfo, payload, producer.getMetadata(), entitySetName, null), odataContext);
   }
 
   protected Response createMediaLinkEntry(
@@ -336,13 +311,17 @@ public class EntitiesRequestResource extends BaseResource {
     // the OData URI scheme makes it impossible to have unique @Paths that refer
     // to functions and entity sets
     final EdmDataServices metadata = producer.getMetadata();
-    if (metadata.findEdmFunctionImport(entitySetName) != null) {
-      return FunctionResource.callFunction(httpHeaders, uriInfo, producer, entitySetName, format, callback, skipToken);
-    } else if(entitySetName.endsWith(POSSIBLE_FUNCTION_NAME_SUFFIX)) {
+    String functionName = null;
+    if(metadata.findEdmFunctionImport(entitySetName) != null)
+      functionName = entitySetName;
+    else if(entitySetName.endsWith(POSSIBLE_FUNCTION_NAME_SUFFIX)){
       final String normalisedFunctionImportName = entitySetName.substring(0, entitySetName.length() - 2);
-      if (metadata.findEdmFunctionImport(normalisedFunctionImportName) != null) {
-        return FunctionResource.callFunction(httpHeaders, uriInfo, producer, normalisedFunctionImportName, format, callback, skipToken);
-      }
+      if(metadata.findEdmFunctionImport(normalisedFunctionImportName) != null)
+        functionName = normalisedFunctionImportName;
+    }
+    if(functionName != null){
+      final QueryInfo queryInfo = QueryInfo.newBuilder().setCustomOptions(OptionsQueryParser.parseCustomOptions(uriInfo)).build();
+      return FunctionResource.callFunction(ODataHttpMethod.GET, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, queryInfo);
     }
 
     QueryInfo query = new QueryInfo(

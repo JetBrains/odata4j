@@ -12,11 +12,8 @@ import org.odata4j.edm.EdmEntitySet;
 import org.odata4j.edm.EdmProperty;
 import org.odata4j.expression.BoolCommonExpression;
 import org.odata4j.expression.Expression;
-import org.odata4j.producer.CountResponse;
-import org.odata4j.producer.EntitiesResponse;
-import org.odata4j.producer.EntityQueryInfo;
-import org.odata4j.producer.InlineCount;
-import org.odata4j.producer.QueryInfo;
+import org.odata4j.producer.*;
+import org.odata4j.producer.inmemory.InMemoryProducer;
 import org.odata4j.producer.resources.OptionsQueryParser;
 
 import java.util.List;
@@ -122,7 +119,8 @@ public class InMemoryProducerTest {
 
     QueryInfo qi = new QueryInfo(InlineCount.ALLPAGES, null, null,
         OptionsQueryParser.parseFilter("(Foo ne null) and substringof('common',tolower(Foo))"), null, null, null, null, null);
-    EntitiesResponse data = producer.getEntities("TestData", qi);
+    ODataContext context = ODataContextImpl.builder().build();
+    EntitiesResponse data = producer.getEntities(context, "TestData", qi);
     Assert.assertEquals(data.getEntities().size(), 2);
   }
 
@@ -239,8 +237,9 @@ public class InMemoryProducerTest {
       }
     });
 
-    QueryInfo qi = new QueryInfo(InlineCount.ALLPAGES, null, null, OptionsQueryParser.parseFilter("Foo"), null, null, null, null, null);
-    final EntitiesResponse data = producer.getEntities("TestData", qi);
+    final QueryInfo qi = new QueryInfo(InlineCount.ALLPAGES, null, null, OptionsQueryParser.parseFilter("Foo"), null, null, null, null, null);
+    final ODataContext context = ODataContextImpl.builder().build();
+    final EntitiesResponse data = producer.getEntities(context, "TestData", qi);
     Assert.assertEquals(data.getEntities().size(), 2);
   }
 
