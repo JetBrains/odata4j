@@ -143,21 +143,59 @@ public class EntitiesRequestResource extends BaseResource {
 
   @GET
   @Produces({ ODataConstants.APPLICATION_ATOM_XML_CHARSET_UTF8,
-      ODataConstants.TEXT_JAVASCRIPT_CHARSET_UTF8,
-      ODataConstants.TEXT_PLAIN_CHARSET_UTF8,
-      ODataConstants.APPLICATION_JAVASCRIPT_CHARSET_UTF8 })
+          ODataConstants.TEXT_JAVASCRIPT_CHARSET_UTF8,
+          ODataConstants.TEXT_PLAIN_CHARSET_UTF8,
+          ODataConstants.APPLICATION_JAVASCRIPT_CHARSET_UTF8 })
   public Response getEntities(
-      @Context HttpHeaders httpHeaders,
-      @Context UriInfo uriInfo,
-      @Context Providers providers,
-      @Context SecurityContext securityContext,
-      @QueryParam("$format") String format,
-      @QueryParam("$callback") String callback,
-      @PathParam("entitySetName") String functionName,
-      InputStream payload) throws Exception {
+          @Context HttpHeaders httpHeaders,
+          @Context UriInfo uriInfo,
+          @Context Providers providers,
+          @Context SecurityContext securityContext,
+          @PathParam("entitySetName") String entitySetName,
+          @QueryParam("$inlinecount") String inlineCount,
+          @QueryParam("$top") String top,
+          @QueryParam("$skip") String skip,
+          @QueryParam("$filter") String filter,
+          @QueryParam("$orderby") String orderBy,
+          @QueryParam("$format") String format,
+          @QueryParam("$callback") String callback,
+          @QueryParam("$skiptoken") String skipToken,
+          @QueryParam("$expand") String expand,
+          @QueryParam("$select") String select)
+          throws Exception {
+
+    log("getEntities",
+            "entitySetName", entitySetName,
+            "inlineCount", inlineCount,
+            "top", top,
+            "skip", skip,
+            "filter", filter,
+            "orderBy", orderBy,
+            "format", format,
+            "callback", callback,
+            "skipToken", skipToken,
+            "expand", expand,
+            "select", select);
+
+    ODataProducer producer = getODataProducer(providers);
+
+    return getEntitiesImpl(httpHeaders, uriInfo, securityContext, producer, entitySetName, false, inlineCount, top, skip,
+            filter, orderBy, format, callback, skipToken, expand, select);
+  }
+
+  @PUT
+  public Response functionCallPut(
+          @Context HttpHeaders httpHeaders,
+          @Context UriInfo uriInfo,
+          @Context Providers providers,
+          @Context SecurityContext securityContext,
+          @QueryParam("$format") String format,
+          @QueryParam("$callback") String callback,
+          @PathParam("entitySetName") String functionName,
+          InputStream payload) throws Exception {
 
     Response response;
-    log("functionCallDelete", "function", functionName);
+    log("functionCallPut", "function", functionName);
 
     ODataProducer producer = getODataProducer(providers);
 
@@ -205,47 +243,6 @@ public class EntitiesRequestResource extends BaseResource {
     }
 
     return response;
-  }
-
-  @GET
-  @Produces({ ODataConstants.APPLICATION_ATOM_XML_CHARSET_UTF8,
-      ODataConstants.TEXT_JAVASCRIPT_CHARSET_UTF8,
-      ODataConstants.APPLICATION_JAVASCRIPT_CHARSET_UTF8 })
-  public Response getEntities(
-      @Context HttpHeaders httpHeaders,
-      @Context UriInfo uriInfo,
-      @Context Providers providers,
-      @Context SecurityContext securityContext,
-      @PathParam("entitySetName") String entitySetName,
-      @QueryParam("$inlinecount") String inlineCount,
-      @QueryParam("$top") String top,
-      @QueryParam("$skip") String skip,
-      @QueryParam("$filter") String filter,
-      @QueryParam("$orderby") String orderBy,
-      @QueryParam("$format") String format,
-      @QueryParam("$callback") String callback,
-      @QueryParam("$skiptoken") String skipToken,
-      @QueryParam("$expand") String expand,
-      @QueryParam("$select") String select)
-      throws Exception {
-
-    log("getEntities",
-        "entitySetName", entitySetName,
-        "inlineCount", inlineCount,
-        "top", top,
-        "skip", skip,
-        "filter", filter,
-        "orderBy", orderBy,
-        "format", format,
-        "callback", callback,
-        "skipToken", skipToken,
-        "expand", expand,
-        "select", select);
-
-    ODataProducer producer = getODataProducer(providers);
-
-    return getEntitiesImpl(httpHeaders, uriInfo, securityContext, producer, entitySetName, false, inlineCount, top, skip,
-        filter, orderBy, format, callback, skipToken, expand, select);
   }
 
   @GET
@@ -308,22 +305,6 @@ public class EntitiesRequestResource extends BaseResource {
       String expand,
       String select) throws Exception {
 
-    // the OData URI scheme makes it impossible to have unique @Paths that refer
-    // to functions and entity sets
-    final EdmDataServices metadata = producer.getMetadata();
-    String functionName = null;
-    if(metadata.findEdmFunctionImport(entitySetName) != null)
-      functionName = entitySetName;
-    else if(entitySetName.endsWith(POSSIBLE_FUNCTION_NAME_SUFFIX)){
-      final String normalisedFunctionImportName = entitySetName.substring(0, entitySetName.length() - 2);
-      if(metadata.findEdmFunctionImport(normalisedFunctionImportName) != null)
-        functionName = normalisedFunctionImportName;
-    }
-    if(functionName != null){
-      final QueryInfo queryInfo = QueryInfo.newBuilder().setCustomOptions(OptionsQueryParser.parseCustomOptions(uriInfo)).build();
-      return FunctionResource.callFunction(ODataHttpMethod.GET, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, queryInfo);
-    }
-
     QueryInfo query = new QueryInfo(
         OptionsQueryParser.parseInlineCount(inlineCount),
         OptionsQueryParser.parseTop(top),
@@ -342,12 +323,21 @@ public class EntitiesRequestResource extends BaseResource {
         .aspect(producer)
         .build();
 
+    final EdmDataServices metadata = producer.getMetadata();
+    String functionName = null;
     // the OData URI scheme makes it impossible to have unique @Paths that refer
     // to functions and entity sets
-    if (producer.getMetadata().findEdmFunctionImport(entitySetName) != null) {
+    if(metadata.findEdmFunctionImport(entitySetName) != null)
+      functionName = entitySetName;
+    else if(entitySetName.endsWith(POSSIBLE_FUNCTION_NAME_SUFFIX)){
+      final String normalisedFunctionImportName = entitySetName.substring(0, entitySetName.length() - 2);
+      if(metadata.findEdmFunctionImport(normalisedFunctionImportName) != null)
+        functionName = normalisedFunctionImportName;
+    }
+    if(functionName != null){
       // functions that return collections of entities should support the
       // same set of query options as entity set queries so give them everything.
-      return FunctionResource.callFunction(ODataHttpMethod.GET, httpHeaders, uriInfo, securityContext, producer, entitySetName, format, callback, query);
+      return FunctionResource.callFunction(ODataHttpMethod.GET, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, query);
     }
 
     Response response = null;
