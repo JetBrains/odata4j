@@ -1,32 +1,16 @@
 package org.odata4j.format.xml;
 
-import static org.odata4j.format.xml.XmlFormatParser.NS_EDM2008_9;
-import static org.odata4j.format.xml.XmlFormatParser.NS_EDMANNOTATION;
-
-import java.io.Writer;
-
 import org.odata4j.core.NamespacedAnnotation;
 import org.odata4j.core.PrefixedNamespace;
-import org.odata4j.edm.EdmAnnotationAttribute;
-import org.odata4j.edm.EdmAnnotationElement;
-import org.odata4j.edm.EdmAssociation;
-import org.odata4j.edm.EdmAssociationSet;
-import org.odata4j.edm.EdmComplexType;
-import org.odata4j.edm.EdmDataServices;
-import org.odata4j.edm.EdmDocumentation;
-import org.odata4j.edm.EdmEntityContainer;
-import org.odata4j.edm.EdmEntitySet;
-import org.odata4j.edm.EdmEntityType;
-import org.odata4j.edm.EdmFunctionImport;
-import org.odata4j.edm.EdmFunctionParameter;
-import org.odata4j.edm.EdmItem;
-import org.odata4j.edm.EdmNavigationProperty;
-import org.odata4j.edm.EdmProperty;
+import org.odata4j.edm.*;
 import org.odata4j.edm.EdmProperty.CollectionKind;
-import org.odata4j.edm.EdmSchema;
 import org.odata4j.stax2.QName2;
 import org.odata4j.stax2.XMLFactoryProvider2;
 import org.odata4j.stax2.XMLWriter2;
+
+import java.io.Writer;
+
+import static org.odata4j.format.xml.XmlFormatParser.NS_EDMANNOTATION;
 
 public class EdmxFormatWriter extends XmlFormatWriter {
 
@@ -49,9 +33,8 @@ public class EdmxFormatWriter extends XmlFormatWriter {
     // Schema
     for (EdmSchema schema : services.getSchemas()) {
 
-      writer.startElement(new QName2("Schema"));
+      writer.startElement(new QName2("Schema"), edm);
       writer.writeAttribute("Namespace", schema.getNamespace());
-      writer.writeNamespace("xmlns", NS_EDM2008_9);
       writeAnnotationAttributes(schema, writer);
       writeDocumentation(schema, writer);
 
