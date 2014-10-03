@@ -1,10 +1,5 @@
 package org.odata4j.expression;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
 import org.core4j.Enumerable;
 import org.core4j.Func1;
 import org.core4j.Func2;
@@ -16,6 +11,11 @@ import org.odata4j.expression.OrderByExpression.Direction;
 import org.odata4j.internal.InternalUtil;
 import org.odata4j.repack.org.apache.commons.codec.DecoderException;
 import org.odata4j.repack.org.apache.commons.codec.binary.Hex;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 public class ExpressionParser {
 
@@ -260,33 +260,35 @@ public class ExpressionParser {
 
   private static List<CommonExpression> readExpressions(List<Token> tokens) {
     List<CommonExpression> rt = new ArrayList<CommonExpression>();
+    if(tokens != null && !tokens.isEmpty()){
+      int stack = 0;
+      int start = 0;
+      for (int i = 0; i < tokens.size(); i++) {
+        Token token = tokens.get(i);
+        if (token.type == TokenType.OPENPAREN) {
+          stack++;
+        } else if (token.type == TokenType.CLOSEPAREN) {
+          stack--;
+        } else if (stack == 0 && token.type == TokenType.SYMBOL && token.value.equals(",")) {
+          List<Token> tokensInsideComma = tokens.subList(start, i);
+          CommonExpression expressionInsideComma = readExpression(tokensInsideComma);
+          rt.add(expressionInsideComma);
+          start = i + 1;
+        } else if (i == tokens.size() - 1) {
+          List<Token> tokensInside = tokens.subList(start, i + 1);
+          CommonExpression expressionInside = readExpression(tokensInside);
+          rt.add(expressionInside);
+        }
 
-    int stack = 0;
-    int start = 0;
-    for (int i = 0; i < tokens.size(); i++) {
-      Token token = tokens.get(i);
-      if (token.type == TokenType.OPENPAREN) {
-        stack++;
-      } else if (token.type == TokenType.CLOSEPAREN) {
-        stack--;
-      } else if (stack == 0 && token.type == TokenType.SYMBOL && token.value.equals(",")) {
-        List<Token> tokensInsideComma = tokens.subList(start, i);
-        CommonExpression expressionInsideComma = readExpression(tokensInsideComma);
-        rt.add(expressionInsideComma);
-        start = i + 1;
-      } else if (i == tokens.size() - 1) {
-        List<Token> tokensInside = tokens.subList(start, i + 1);
-        CommonExpression expressionInside = readExpression(tokensInside);
-        rt.add(expressionInside);
       }
-
     }
     return rt;
   }
 
   public static List<Token> processParentheses(List<Token> tokens) {
-
     List<Token> rt = new ArrayList<Token>();
+
+    if(tokens == null || tokens.isEmpty()) return rt;
 
     for (int i = 0; i < tokens.size(); i++) {
       Token openToken = tokens.get(i);
@@ -424,7 +426,6 @@ public class ExpressionParser {
     }
 
     return rt;
-
   }
 
   private static <T extends CommonExpression> void assertType(CommonExpression expression, Class<T> type) {
