@@ -435,18 +435,19 @@ public class ExpressionParser {
   }
 
   private static CommonExpression readExpression(List<Token> tokens) {
-
-    CommonExpression rt = null;
-
     tokens = trimWhitespace(tokens);
+
+    if(tokens.isEmpty()) return Expression.string("");
 
     // OrderBy asc, desc
     Token lastToken = tokens.get(tokens.size() - 1);
     if (lastToken.type == TokenType.WORD && (lastToken.value.equals("asc") || lastToken.value.equals("desc"))) {
       return Expression.orderBy(
-          readExpression(tokens.subList(0, tokens.size() - 1)),
-          lastToken.value.equals("asc") ? Direction.ASCENDING : Direction.DESCENDING);
+              readExpression(tokens.subList(0, tokens.size() - 1)),
+              lastToken.value.equals("asc") ? Direction.ASCENDING : Direction.DESCENDING);
     }
+
+    CommonExpression rt;
 
     // Grouping (highest precedence)
     tokens = processParentheses(tokens);
@@ -739,6 +740,7 @@ public class ExpressionParser {
   }
 
   private static List<Token> trimWhitespace(List<Token> tokens) {
+    if(tokens.isEmpty()) return tokens;
     int start = 0;
     while (tokens.get(start).type == TokenType.WHITESPACE) {
       start++;
@@ -748,7 +750,6 @@ public class ExpressionParser {
       end--;
     }
     return tokens.subList(start, end + 1);
-
   }
 
   // tokenizer
