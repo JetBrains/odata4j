@@ -1,8 +1,15 @@
 package org.odata4j.test.unit.format.xml;
 
-import static org.custommonkey.xmlunit.XMLAssert.assertXpathExists;
-import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import org.custommonkey.xmlunit.SimpleNamespaceContext;
+import org.custommonkey.xmlunit.XMLUnit;
+import org.custommonkey.xmlunit.exceptions.XpathException;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.odata4j.edm.*;
+import org.odata4j.edm.EdmProperty.CollectionKind;
+import org.odata4j.format.xml.EdmxFormatWriter;
+import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -10,37 +17,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.custommonkey.xmlunit.SimpleNamespaceContext;
-import org.custommonkey.xmlunit.XMLUnit;
-import org.custommonkey.xmlunit.exceptions.XpathException;
-import org.junit.Before;
-import org.junit.Test;
-import org.odata4j.edm.EdmAnnotation;
-import org.odata4j.edm.EdmAnnotationAttribute;
-import org.odata4j.edm.EdmAnnotationElement;
-import org.odata4j.edm.EdmAssociation;
-import org.odata4j.edm.EdmAssociationEnd;
-import org.odata4j.edm.EdmAssociationSet;
-import org.odata4j.edm.EdmAssociationSetEnd;
-import org.odata4j.edm.EdmCollectionType;
-import org.odata4j.edm.EdmComplexType;
-import org.odata4j.edm.EdmDataServices;
-import org.odata4j.edm.EdmEntityContainer;
-import org.odata4j.edm.EdmEntitySet;
-import org.odata4j.edm.EdmEntityType;
-import org.odata4j.edm.EdmFunctionImport;
-import org.odata4j.edm.EdmFunctionParameter;
-import org.odata4j.edm.EdmMultiplicity;
-import org.odata4j.edm.EdmNavigationProperty;
-import org.odata4j.edm.EdmOnDeleteAction;
-import org.odata4j.edm.EdmProperty;
-import org.odata4j.edm.EdmProperty.CollectionKind;
-import org.odata4j.edm.EdmReferentialConstraint;
-import org.odata4j.edm.EdmSchema;
-import org.odata4j.edm.EdmSimpleType;
-import org.odata4j.format.xml.EdmxFormatWriter;
-import org.xml.sax.SAXException;
+import static org.custommonkey.xmlunit.XMLAssert.assertXpathExists;
+import static org.junit.Assert.assertThat;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
+@Ignore
 public class EdmxFormatWriterTest {
 
   private static final String NAMESPACE = "Example";
