@@ -1,71 +1,23 @@
 package org.odata4j.producer.inmemory;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.core4j.Enumerable;
 import org.core4j.Func;
 import org.core4j.Func1;
 import org.core4j.Predicate1;
-import org.odata4j.core.OAtomStreamEntity;
-import org.odata4j.core.OCollection;
-import org.odata4j.core.OCollections;
-import org.odata4j.core.OComplexObject;
-import org.odata4j.core.OComplexObjects;
-import org.odata4j.core.OEntities;
-import org.odata4j.core.OEntity;
-import org.odata4j.core.OEntityId;
-import org.odata4j.core.OEntityKey;
-import org.odata4j.core.OExtension;
-import org.odata4j.core.OFunctionParameter;
-import org.odata4j.core.OLink;
-import org.odata4j.core.OLinks;
-import org.odata4j.core.OObject;
-import org.odata4j.core.OProperties;
-import org.odata4j.core.OProperty;
-import org.odata4j.core.OSimpleObject;
-import org.odata4j.core.OSimpleObjects;
-import org.odata4j.core.OStructuralObject;
-import org.odata4j.edm.EdmCollectionType;
-import org.odata4j.edm.EdmComplexType;
-import org.odata4j.edm.EdmDataServices;
-import org.odata4j.edm.EdmDecorator;
-import org.odata4j.edm.EdmEntitySet;
-import org.odata4j.edm.EdmEntityType;
-import org.odata4j.edm.EdmFunctionImport;
-import org.odata4j.edm.EdmMultiplicity;
-import org.odata4j.edm.EdmNavigationProperty;
-import org.odata4j.edm.EdmProperty;
-import org.odata4j.edm.EdmSimpleType;
-import org.odata4j.edm.EdmStructuralType;
-import org.odata4j.edm.EdmType;
+import org.odata4j.core.*;
+import org.odata4j.edm.*;
 import org.odata4j.exceptions.NotFoundException;
 import org.odata4j.exceptions.NotImplementedException;
 import org.odata4j.expression.BoolCommonExpression;
 import org.odata4j.expression.OrderByExpression;
 import org.odata4j.expression.OrderByExpression.Direction;
-import org.odata4j.producer.BaseResponse;
-import org.odata4j.producer.CountResponse;
-import org.odata4j.producer.EntitiesResponse;
-import org.odata4j.producer.EntityIdResponse;
-import org.odata4j.producer.EntityQueryInfo;
-import org.odata4j.producer.EntityResponse;
-import org.odata4j.producer.InlineCount;
-import org.odata4j.producer.ODataContext;
-import org.odata4j.producer.ODataProducer;
-import org.odata4j.producer.PropertyPathHelper;
-import org.odata4j.producer.QueryInfo;
-import org.odata4j.producer.Responses;
+import org.odata4j.producer.*;
 import org.odata4j.producer.edm.MetadataProducer;
 import org.odata4j.producer.inmemory.InMemoryProducer.RequestContext.RequestType;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
 
 /**
  * An in-memory implementation of an ODATA Producer.  Uses the standard Java bean
@@ -189,7 +141,7 @@ public class InMemoryProducer implements ODataProducer {
     i.propertyModel = propertyModel;
 
     complexTypes.put(i.typeName, i);
-    metadata = null;
+    cleanCachedMetadata();
   }
 
   /**
@@ -289,6 +241,10 @@ public class InMemoryProducer implements ODataProducer {
     };
 
     eis.put(entitySetName, ei);
+    cleanCachedMetadata();
+  }
+
+  protected void cleanCachedMetadata(){
     metadata = null;
   }
 
