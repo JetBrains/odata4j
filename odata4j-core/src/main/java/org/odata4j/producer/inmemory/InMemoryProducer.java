@@ -1081,4 +1081,8 @@ public class InMemoryProducer implements ODataProducer {
     fireUnmarshalEvent(pojo, entity, TriggerType.After);
     return pojo;
   }
+
+  protected InMemoryEntityInfo<?> getEntityInfo(String entitySetName){
+    return eis.get(entitySetName);
+  }
 }
