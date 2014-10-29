@@ -377,7 +377,7 @@ public class JPAProducer implements ODataProducer {
 
   @Override
   public BaseResponse callFunction(ODataContext context, EdmFunctionImport name,
-      Map<String, OFunctionParameter> params, QueryInfo queryInfo) {
+                                   Map<String, OFunctionParameter> params, QueryInfo queryInfo, boolean isCountCall) {
     return null;
   }
 

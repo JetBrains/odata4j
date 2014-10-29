@@ -140,7 +140,7 @@ public class FunctionImportProducerMock implements ODataProducer {
   public void deleteLink(ODataContext context, OEntityId sourceEntity, String targetNavProp, OEntityKey targetEntityKey) {}
 
   @Override
-  public BaseResponse callFunction(ODataContext context, EdmFunctionImport name, Map<String, OFunctionParameter> params, QueryInfo queryInfo) {
+  public BaseResponse callFunction(ODataContext context, EdmFunctionImport name, Map<String, OFunctionParameter> params, QueryInfo queryInfo, boolean isCountCall) {
     BaseResponse response;
 
     FunctionImportProducerMock.LOGGER.debug("EdmFunctionImport Object:    " + name.getName());

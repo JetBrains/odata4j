@@ -194,6 +194,7 @@ public interface ODataProducer extends OExtensible<ODataProducer> {
    * @param name  the name of the function
    * @param params  the parameters to the function
    * @param queryInfo  additional query parameters to apply to collection-valued results
+   * @param isCountCall
    * @return a BaseResponse appropriately typed to hold the function results
    *    From the spec:<pre>
    *    The return type of &lt;Function&gt; MUST be one of the following:
@@ -206,5 +207,5 @@ public interface ODataProducer extends OExtensible<ODataProducer> {
    *        &lt;ReturnType&gt; can contain a maximum of one &lt;RowType&gt; element.
    *        A ref type or collection of ref types.</pre>
    */
-  BaseResponse callFunction(ODataContext context, EdmFunctionImport name, Map<String, OFunctionParameter> params, QueryInfo queryInfo);
+  BaseResponse callFunction(ODataContext context, EdmFunctionImport name, Map<String, OFunctionParameter> params, QueryInfo queryInfo, boolean isCountCall);
 }

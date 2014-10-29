@@ -1,28 +1,15 @@
 package org.odata4j.producer.command;
 
-import java.util.Map;
-
 import org.odata4j.command.Command;
 import org.odata4j.command.CommandExecution;
-import org.odata4j.core.OEntity;
-import org.odata4j.core.OEntityId;
-import org.odata4j.core.OEntityKey;
-import org.odata4j.core.OExtension;
-import org.odata4j.core.OFunctionParameter;
-import org.odata4j.core.Throwables;
+import org.odata4j.core.*;
 import org.odata4j.edm.EdmDataServices;
 import org.odata4j.edm.EdmDataServicesProvider;
 import org.odata4j.edm.EdmFunctionImport;
-import org.odata4j.producer.BaseResponse;
-import org.odata4j.producer.CountResponse;
-import org.odata4j.producer.EntitiesResponse;
-import org.odata4j.producer.EntityIdResponse;
-import org.odata4j.producer.EntityQueryInfo;
-import org.odata4j.producer.EntityResponse;
-import org.odata4j.producer.ODataContext;
-import org.odata4j.producer.ODataProducer;
-import org.odata4j.producer.QueryInfo;
+import org.odata4j.producer.*;
 import org.odata4j.producer.edm.MetadataProducer;
+
+import java.util.Map;
 
 public class CommandProducer implements ODataProducer {
 
@@ -136,7 +123,7 @@ public class CommandProducer implements ODataProducer {
   }
 
   @Override
-  public BaseResponse callFunction(ODataContext context, EdmFunctionImport name, Map<String, OFunctionParameter> params, QueryInfo queryInfo) {
+  public BaseResponse callFunction(ODataContext context, EdmFunctionImport name, Map<String, OFunctionParameter> params, QueryInfo queryInfo, boolean isCountCall) {
     return executeCommand(CallFunctionCommandContext.class, BaseResponse.class, backend.newCallFunctionCommandContext(name, params, queryInfo));
   }
 

@@ -241,7 +241,7 @@ public class ContextTest extends AbstractJettyHttpClientTest {
 
     ContentExchange exchange = sendRequestWithHeaders(BASE_URI + "f?p='foo'", myHeaders);
 
-    verify(producer).callFunction(context.capture(), any(EdmFunctionImport.class), any(Map.class), any(QueryInfo.class));
+    verify(producer).callFunction(context.capture(), any(EdmFunctionImport.class), any(Map.class), any(QueryInfo.class), false);
 
     assertContext();
   }

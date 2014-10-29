@@ -1,23 +1,6 @@
 package org.odata4j.producer.resources;
 
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriInfo;
-
-import org.odata4j.core.ODataConstants;
-import org.odata4j.core.ODataHttpMethod;
-import org.odata4j.core.ODataVersion;
-import org.odata4j.core.OEntity;
-import org.odata4j.core.OFunctionParameter;
-import org.odata4j.core.OFunctionParameters;
+import org.odata4j.core.*;
 import org.odata4j.edm.EdmEntityType;
 import org.odata4j.edm.EdmFunctionImport;
 import org.odata4j.edm.EdmFunctionParameter;
@@ -25,17 +8,18 @@ import org.odata4j.exceptions.MethodNotAllowedException;
 import org.odata4j.exceptions.NotImplementedException;
 import org.odata4j.format.FormatWriter;
 import org.odata4j.format.FormatWriterFactory;
-import org.odata4j.producer.BaseResponse;
-import org.odata4j.producer.CollectionResponse;
-import org.odata4j.producer.ComplexObjectResponse;
-import org.odata4j.producer.EntitiesResponse;
-import org.odata4j.producer.EntityResponse;
-import org.odata4j.producer.ODataContextImpl;
-import org.odata4j.producer.ODataProducer;
-import org.odata4j.producer.PropertyResponse;
-import org.odata4j.producer.QueryInfo;
-import org.odata4j.producer.Responses;
-import org.odata4j.producer.SimpleResponse;
+import org.odata4j.producer.*;
+
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.core.UriInfo;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Handles function calls.
@@ -53,6 +37,20 @@ import org.odata4j.producer.SimpleResponse;
  */
 public class FunctionResource extends BaseResource {
 
+  public static Response makeCountFunctionCall(
+          ODataHttpMethod callingMethod,
+          HttpHeaders httpHeaders,
+          UriInfo uriInfo,
+          SecurityContext securityContext,
+          ODataProducer producer,
+          String functionName,
+          String format,
+          String callback,
+          QueryInfo queryInfo) throws Exception {
+    return callFunctionInternal(callingMethod, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, queryInfo, true);
+  }
+
+
   /**
    * Handles function call resource access by gathering function call info from
    * the request and delegating to the producer.
@@ -68,7 +66,10 @@ public class FunctionResource extends BaseResource {
       String format,
       String callback,
       QueryInfo queryInfo) throws Exception {
+    return callFunctionInternal(callingMethod, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, queryInfo, false);
+  }
 
+  private static Response callFunctionInternal(ODataHttpMethod callingMethod, HttpHeaders httpHeaders, UriInfo uriInfo, SecurityContext securityContext, ODataProducer producer, String functionName, String format, String callback, QueryInfo queryInfo, boolean isCountCall) {
     // do we have this function?
     EdmFunctionImport function = producer.getMetadata().findEdmFunctionImport(functionName);
     if (function == null) {
@@ -84,7 +85,7 @@ public class FunctionResource extends BaseResource {
     }
 
     BaseResponse response = producer.callFunction(ODataContextImpl.builder().aspect(httpHeaders).aspect(securityContext).aspect(producer).build(),
-        function, getFunctionParameters(function, queryInfo.customOptions), queryInfo);
+        function, getFunctionParameters(function, queryInfo.customOptions), queryInfo, isCountCall);
 
     if (response == null) {
       return Response.status(Status.NO_CONTENT).build();
@@ -99,10 +100,10 @@ public class FunctionResource extends BaseResource {
     if (response instanceof ComplexObjectResponse) {
       FormatWriter<ComplexObjectResponse> fw =
           FormatWriterFactory.getFormatWriter(
-              ComplexObjectResponse.class,
-              httpHeaders.getAcceptableMediaTypes(),
-              format,
-              callback);
+                  ComplexObjectResponse.class,
+                  httpHeaders.getAcceptableMediaTypes(),
+                  format,
+                  callback);
 
       fw.write(uriInfo, sw, (ComplexObjectResponse) response);
       fwBase = fw;

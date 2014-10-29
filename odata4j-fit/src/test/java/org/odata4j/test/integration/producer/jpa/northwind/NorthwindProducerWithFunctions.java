@@ -2,6 +2,7 @@ package org.odata4j.test.integration.producer.jpa.northwind;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.odata4j.core.OCollection;
 import org.odata4j.core.OCollections;
@@ -53,7 +54,7 @@ public class NorthwindProducerWithFunctions extends ODataProducerDelegate {
   }
 
   @Override
-  public BaseResponse callFunction(ODataContext context, EdmFunctionImport function, java.util.Map<String, OFunctionParameter> params, QueryInfo queryInfo) {
+  public BaseResponse callFunction(ODataContext context, EdmFunctionImport function, Map<String, OFunctionParameter> params, QueryInfo queryInfo, boolean isCountCall) {
     if (function.getName().equals("TestFunction1")) {
       return testFunction1(function, params, queryInfo);
     } else if (function.getName().equals("TestFunction2")) {

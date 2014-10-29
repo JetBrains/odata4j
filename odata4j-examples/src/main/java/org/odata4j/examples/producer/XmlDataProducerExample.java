@@ -298,7 +298,7 @@ public class XmlDataProducerExample extends AbstractExample {
     }
 
     @Override
-    public BaseResponse callFunction(ODataContext context, EdmFunctionImport name, Map<String, OFunctionParameter> params, QueryInfo queryInfo) {
+    public BaseResponse callFunction(ODataContext context, EdmFunctionImport name, Map<String, OFunctionParameter> params, QueryInfo queryInfo, boolean isCountCall) {
       throw new NotImplementedException();
     }
 
