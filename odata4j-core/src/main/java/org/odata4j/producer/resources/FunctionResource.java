@@ -53,10 +53,6 @@ public class FunctionResource extends BaseResource {
           String callback,
           QueryInfo queryInfo,
           boolean isCountCall) throws Exception {
-    return callFunctionInternal(callingMethod, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, queryInfo, isCountCall);
-  }
-
-  private static Response callFunctionInternal(ODataHttpMethod callingMethod, HttpHeaders httpHeaders, UriInfo uriInfo, SecurityContext securityContext, ODataProducer producer, String functionName, String format, String callback, QueryInfo queryInfo, boolean isCountCall) {
     // do we have this function?
     EdmFunctionImport function = producer.getMetadata().findEdmFunctionImport(functionName);
     if (function == null) {
@@ -72,7 +68,7 @@ public class FunctionResource extends BaseResource {
     }
 
     BaseResponse response = producer.callFunction(ODataContextImpl.builder().aspect(httpHeaders).aspect(securityContext).aspect(producer).build(),
-        function, getFunctionParameters(function, queryInfo.customOptions), queryInfo, isCountCall);
+            function, getFunctionParameters(function, queryInfo.customOptions), queryInfo, isCountCall);
 
     if (response == null) {
       return Response.status(Status.NO_CONTENT).build();
@@ -86,11 +82,11 @@ public class FunctionResource extends BaseResource {
     // hmmh...we are missing an abstraction somewhere..
     if (response instanceof ComplexObjectResponse) {
       FormatWriter<ComplexObjectResponse> fw =
-          FormatWriterFactory.getFormatWriter(
-                  ComplexObjectResponse.class,
-                  httpHeaders.getAcceptableMediaTypes(),
-                  format,
-                  callback);
+              FormatWriterFactory.getFormatWriter(
+                      ComplexObjectResponse.class,
+                      httpHeaders.getAcceptableMediaTypes(),
+                      format,
+                      callback);
 
       fw.write(uriInfo, sw, (ComplexObjectResponse) response);
       fwBase = fw;
@@ -99,10 +95,10 @@ public class FunctionResource extends BaseResource {
 
       if (collectionResponse.getCollection().getType() instanceof EdmEntityType) {
         FormatWriter<EntitiesResponse> fw = FormatWriterFactory.getFormatWriter(
-            EntitiesResponse.class,
-            httpHeaders.getAcceptableMediaTypes(),
-            format,
-            callback);
+                EntitiesResponse.class,
+                httpHeaders.getAcceptableMediaTypes(),
+                format,
+                callback);
 
         // collection of entities.
         // Does anyone else see this in the v2 spec?  I sure don't.  This seems
@@ -113,69 +109,64 @@ public class FunctionResource extends BaseResource {
           entities.add((OEntity) iter.next());
         }
         EntitiesResponse er = Responses.entities(entities,
-            collectionResponse.getEntitySet(),
-            collectionResponse.getInlineCount(),
-            collectionResponse.getSkipToken());
+                collectionResponse.getEntitySet(),
+                collectionResponse.getInlineCount(),
+                collectionResponse.getSkipToken());
         fw.write(uriInfo, sw, er);
         fwBase = fw;
       } else {
         // non-entities
         FormatWriter<CollectionResponse> fw = FormatWriterFactory.getFormatWriter(
-            CollectionResponse.class,
-            httpHeaders.getAcceptableMediaTypes(),
-            format,
-            callback);
+                CollectionResponse.class,
+                httpHeaders.getAcceptableMediaTypes(),
+                format,
+                callback);
         fw.write(uriInfo, sw, collectionResponse);
         fwBase = fw;
       }
     } else if (response instanceof EntitiesResponse) {
       FormatWriter<EntitiesResponse> fw = FormatWriterFactory.getFormatWriter(
-          EntitiesResponse.class,
-          httpHeaders.getAcceptableMediaTypes(),
-          format,
-          callback);
+              EntitiesResponse.class,
+              httpHeaders.getAcceptableMediaTypes(),
+              format,
+              callback);
 
       fw.write(uriInfo, sw, (EntitiesResponse) response);
       fwBase = fw;
     } else if (response instanceof PropertyResponse) {
       FormatWriter<PropertyResponse> fw =
-          FormatWriterFactory.getFormatWriter(
-              PropertyResponse.class,
-              httpHeaders.getAcceptableMediaTypes(),
-              format,
-              callback);
+              FormatWriterFactory.getFormatWriter(
+                      PropertyResponse.class,
+                      httpHeaders.getAcceptableMediaTypes(),
+                      format,
+                      callback);
 
       fw.write(uriInfo, sw, (PropertyResponse) response);
       fwBase = fw;
     } else if (response instanceof SimpleResponse) {
       FormatWriter<SimpleResponse> fw =
-          FormatWriterFactory.getFormatWriter(
-              SimpleResponse.class,
-              httpHeaders.getAcceptableMediaTypes(),
-              format,
-              callback);
+              FormatWriterFactory.getFormatWriter(
+                      SimpleResponse.class,
+                      httpHeaders.getAcceptableMediaTypes(),
+                      format,
+                      callback);
 
       fw.write(uriInfo, sw, (SimpleResponse) response);
       fwBase = fw;
     } else if (response instanceof EntityResponse) {
       FormatWriter<EntityResponse> fw =
-          FormatWriterFactory.getFormatWriter(
-              EntityResponse.class,
-              httpHeaders.getAcceptableMediaTypes(),
-              format,
-              callback);
+              FormatWriterFactory.getFormatWriter(
+                      EntityResponse.class,
+                      httpHeaders.getAcceptableMediaTypes(),
+                      format,
+                      callback);
 
       fw.write(uriInfo, sw, (EntityResponse) response);
       fwBase = fw;
     } else if(response instanceof CountResponse) {
-      FormatWriter<CountResponse> fw =
-              FormatWriterFactory.getFormatWriter(
-                      CountResponse.class,
-                      httpHeaders.getAcceptableMediaTypes(),
-                      format,
-                      callback);
-      fw.write(uriInfo, sw, (CountResponse) response);
-      fwBase = fw;
+      return Response.ok(Long.toString(((CountResponse)response).getCount()),  ODataConstants.APPLICATION_XML_CHARSET_UTF8)
+                     .header(ODataConstants.Headers.DATA_SERVICE_VERSION, version.asString)
+                     .build();
     } else {
       // TODO add in other response types.
       throw new NotImplementedException("Unknown BaseResponse type: " + response.getClass().getName());
@@ -183,8 +174,8 @@ public class FunctionResource extends BaseResource {
 
     String entity = sw.toString();
     return Response.ok(entity, fwBase.getContentType())
-        .header(ODataConstants.Headers.DATA_SERVICE_VERSION, version.asString)
-        .build();
+            .header(ODataConstants.Headers.DATA_SERVICE_VERSION, version.asString)
+            .build();
   }
 
   /**

@@ -598,6 +598,55 @@ public class InMemoryProducer implements ODataProducer {
     return Responses.count(entities.count());
   }
 
+  protected CountResponse getCountResponse(final RequestContext rc, Enumerable<Object> objects) {
+
+    final InMemoryEntityInfo<?> ei = eis.get(rc.getEntitySetName());
+
+    QueryInfo queryInfo = rc.getQueryInfo();
+    final PropertyPathHelper pathHelper = new PropertyPathHelper(queryInfo);
+
+    // apply filter
+    if (queryInfo != null && queryInfo.filter != null) {
+      objects = objects.where(filterToPredicate(queryInfo.filter, ei.properties));
+    }
+
+    // inlineCount is not applicable to $count queries
+    if (queryInfo != null && queryInfo.inlineCount == InlineCount.ALLPAGES) {
+      throw new UnsupportedOperationException("$inlinecount cannot be applied to the resource segment '$count'");
+    }
+
+    // ignore ordering for count
+
+    // work with oentities.
+    Enumerable<OEntity> entities = objects.select(new Func1<Object, OEntity>() {
+      @Override
+      public OEntity apply(Object input) {
+        return toOEntity(rc.getEntitySet(), input, pathHelper);
+      }
+    });
+
+    // skipToken is not applicable to $count queries
+    if (queryInfo != null && queryInfo.skipToken != null) {
+      throw new UnsupportedOperationException("Skip tokens can only be provided for requests that return collections of entities.");
+    }
+
+    // skip records by $skip amount
+    // http://services.odata.org/Northwind/Northwind.svc/Customers/$count/?$skip=5
+    if (queryInfo != null && queryInfo.skip != null) {
+      entities = entities.skip(queryInfo.skip);
+    }
+
+    // apply $top.  maxResults is not applicable to $count but $top is.
+    // http://services.odata.org/Northwind/Northwind.svc/Customers/$count/?$top=55
+    int limit = Integer.MAX_VALUE;
+    if (queryInfo != null && queryInfo.top != null && queryInfo.top < limit) {
+      limit = queryInfo.top;
+    }
+    entities = entities.take(limit);
+
+    return Responses.count(entities.count());
+  }
+
   private Enumerable<Object> orderBy(Enumerable<Object> iter, List<OrderByExpression> orderBys, final PropertyModel properties) {
     for (final OrderByExpression orderBy : Enumerable.create(orderBys).reverse())
       iter = iter.orderBy(new Comparator<Object>() {
