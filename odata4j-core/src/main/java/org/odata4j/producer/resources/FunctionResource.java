@@ -37,7 +37,12 @@ import java.util.Map;
  */
 public class FunctionResource extends BaseResource {
 
-  public static Response makeCountFunctionCall(
+  /**
+   * Handles function call resource access by gathering function call info from
+   * the request and delegating to the producer.
+   */
+  @SuppressWarnings("rawtypes")
+  public static Response callFunction(
           ODataHttpMethod callingMethod,
           HttpHeaders httpHeaders,
           UriInfo uriInfo,
@@ -46,27 +51,9 @@ public class FunctionResource extends BaseResource {
           String functionName,
           String format,
           String callback,
-          QueryInfo queryInfo) throws Exception {
-    return callFunctionInternal(callingMethod, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, queryInfo, true);
-  }
-
-
-  /**
-   * Handles function call resource access by gathering function call info from
-   * the request and delegating to the producer.
-   */
-  @SuppressWarnings("rawtypes")
-  public static Response callFunction(
-      ODataHttpMethod callingMethod,
-      HttpHeaders httpHeaders,
-      UriInfo uriInfo,
-      SecurityContext securityContext,
-      ODataProducer producer,
-      String functionName,
-      String format,
-      String callback,
-      QueryInfo queryInfo) throws Exception {
-    return callFunctionInternal(callingMethod, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, queryInfo, false);
+          QueryInfo queryInfo,
+          boolean isCountCall) throws Exception {
+    return callFunctionInternal(callingMethod, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, queryInfo, isCountCall);
   }
 
   private static Response callFunctionInternal(ODataHttpMethod callingMethod, HttpHeaders httpHeaders, UriInfo uriInfo, SecurityContext securityContext, ODataProducer producer, String functionName, String format, String callback, QueryInfo queryInfo, boolean isCountCall) {

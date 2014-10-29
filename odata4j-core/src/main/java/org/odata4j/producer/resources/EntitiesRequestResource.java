@@ -61,7 +61,7 @@ public class EntitiesRequestResource extends BaseResource {
       }
 
       QueryInfo query = QueryInfo.newBuilder().setCustomOptions(OptionsQueryParser.parseCustomOptions(uriInfo)).build();
-      return FunctionResource.callFunction(callingMethod, httpHeaders, uriInfo, securityContext, producer, entitySetName, format, callback, query);
+      return FunctionResource.callFunction(callingMethod, httpHeaders, uriInfo, securityContext, producer, entitySetName, format, callback, query, false);
     }
 
     // is this a new media resource?
@@ -206,7 +206,7 @@ public class EntitiesRequestResource extends BaseResource {
       // same set of query options as entity set queries so give them everything.
 
       QueryInfo query = QueryInfo.newBuilder().setCustomOptions(OptionsQueryParser.parseCustomOptions(uriInfo)).build();
-      response = FunctionResource.callFunction(ODataHttpMethod.PUT, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, query);
+      response = FunctionResource.callFunction(ODataHttpMethod.PUT, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, query, false);
     } else {
       throw new NotFoundException(functionName);
     }
@@ -237,7 +237,7 @@ public class EntitiesRequestResource extends BaseResource {
       // same set of query options as entity set queries so give them everything.
 
       QueryInfo query = QueryInfo.newBuilder().setCustomOptions(OptionsQueryParser.parseCustomOptions(uriInfo)).build();
-      response = FunctionResource.callFunction(ODataHttpMethod.DELETE, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, query);
+      response = FunctionResource.callFunction(ODataHttpMethod.DELETE, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, query, false);
     } else {
       throw new NotFoundException(functionName);
     }
@@ -337,7 +337,7 @@ public class EntitiesRequestResource extends BaseResource {
     if(functionName != null){
       // functions that return collections of entities should support the
       // same set of query options as entity set queries so give them everything.
-      return FunctionResource.callFunction(ODataHttpMethod.GET, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, query);
+      return FunctionResource.callFunction(ODataHttpMethod.GET, httpHeaders, uriInfo, securityContext, producer, functionName, format, callback, query, isCount);
     }
 
     Response response = null;
