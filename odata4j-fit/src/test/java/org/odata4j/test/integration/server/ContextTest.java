@@ -1,24 +1,5 @@
 package org.odata4j.test.integration.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.ws.rs.core.SecurityContext;
-
 import org.eclipse.jetty.client.ContentExchange;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -31,15 +12,22 @@ import org.odata4j.core.OEntity;
 import org.odata4j.core.OEntityId;
 import org.odata4j.core.OEntityKey;
 import org.odata4j.edm.EdmFunctionImport;
-import org.odata4j.producer.EntityQueryInfo;
-import org.odata4j.producer.ODataContext;
-import org.odata4j.producer.ODataHeadersContext;
-import org.odata4j.producer.ODataProducer;
-import org.odata4j.producer.OMediaLinkExtensions;
-import org.odata4j.producer.QueryInfo;
+import org.odata4j.producer.*;
 import org.odata4j.producer.resources.DefaultODataProducerProvider;
 import org.odata4j.test.integration.AbstractJettyHttpClientTest;
 import org.odata4j.test.integration.producer.custom.CustomProducer;
+
+import javax.ws.rs.core.SecurityContext;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 /**
  * test for the new ODataContext producer parameter.
@@ -241,7 +229,7 @@ public class ContextTest extends AbstractJettyHttpClientTest {
 
     ContentExchange exchange = sendRequestWithHeaders(BASE_URI + "f?p='foo'", myHeaders);
 
-    verify(producer).callFunction(context.capture(), any(EdmFunctionImport.class), any(Map.class), any(QueryInfo.class), false);
+    verify(producer).callFunction(context.capture(), any(EdmFunctionImport.class), any(Map.class), any(QueryInfo.class), any(Boolean.class));
 
     assertContext();
   }
