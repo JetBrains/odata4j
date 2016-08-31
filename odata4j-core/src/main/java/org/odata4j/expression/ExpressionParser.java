@@ -830,16 +830,11 @@ public class ExpressionParser {
   }
 
   private static int readQuotedString(String value, int start) {
-    int rt = start;
-    while (value.charAt(rt) != '\'' || (rt < value.length() - 1 && value.charAt(rt + 1) == '\'')) {
-      if (value.charAt(rt) != '\'') {
-        rt++;
-      } else {
-        rt += 2;
-      }
+    int rt = value.lastIndexOf('\'');
+    if (rt < start) {
+      throw new RuntimeException("Invalid quoted string expression: " + value);
     }
-    rt++;
-    return rt;
+    return rt + 1;
   }
 
   private static int readWhitespace(String value, int start) {
