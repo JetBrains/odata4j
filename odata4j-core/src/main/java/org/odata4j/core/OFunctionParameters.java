@@ -2,6 +2,7 @@ package org.odata4j.core;
 
 import org.odata4j.edm.EdmSimpleType;
 import org.odata4j.edm.EdmType;
+import org.odata4j.exceptions.BadRequestException;
 import org.odata4j.exceptions.NotImplementedException;
 import org.odata4j.expression.CommonExpression;
 import org.odata4j.expression.Expression;
@@ -38,7 +39,12 @@ public class OFunctionParameters {
   /** Creates a new OFunctionParameter by parsing a string value */
   public static OFunctionParameter parse(String name, EdmType type, String value) {
     if (type instanceof EdmSimpleType) {
-      CommonExpression ce = ExpressionParser.parse(value);
+      CommonExpression ce;
+      try {
+         ce = ExpressionParser.parse(value);
+      } catch (Exception e) {
+        throw new BadRequestException(String.format("Invalid value for %s parameter", name));
+      }
       if (ce instanceof LiteralExpression) {
         // may have to case the literalValue based on type...
         Object val = convert(Expression.literalValue((LiteralExpression) ce), (EdmSimpleType<?>) type);
