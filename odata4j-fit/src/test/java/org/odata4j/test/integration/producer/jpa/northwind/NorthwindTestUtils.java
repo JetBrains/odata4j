@@ -16,6 +16,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.ws.rs.core.MediaType;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -39,6 +41,7 @@ import org.xml.sax.InputSource;
 public class NorthwindTestUtils {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(NorthwindTestUtils.class);
+  private static final Pattern SKIP_TOKEN = Pattern.compile("(\\$skiptoken=[^&\"]+)&(\\$[^&\"]+)");
 
   private RuntimeFacade rtFacade;
 
@@ -98,6 +101,10 @@ public class NorthwindTestUtils {
       result = result.replace(
           "http://localhost:8810/northwind",
           "http://services.odata.org/northwind");
+      Matcher matcher = SKIP_TOKEN.matcher(result);
+      if (matcher.find()) {
+        result = matcher.replaceAll("$2&$1");
+      }
 
       String expect = NorthwindTestUtils.readFileToString(
           RESOURCES_ROOT +
