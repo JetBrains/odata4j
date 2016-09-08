@@ -8,15 +8,12 @@ import org.odata4j.consumer.ODataConsumer;
 import org.odata4j.core.OEntity;
 import org.odata4j.core.OProperties;
 import org.odata4j.core.ORelatedEntityLink;
-import org.odata4j.test.integration.UriProvider;
 
 public class CreateWithLink2Test extends NorthwindJpaProducerTest {
 
   public CreateWithLink2Test(RuntimeFacadeType type) {
     super(type);
   }
-
-  protected static final String endpointUri = UriProvider.getEndpointUri("/northwind/Northwind.svc/");
 
   @Before
   public void setUp() {
