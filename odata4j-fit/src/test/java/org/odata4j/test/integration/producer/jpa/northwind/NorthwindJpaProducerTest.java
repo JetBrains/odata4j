@@ -13,6 +13,7 @@ import org.odata4j.producer.jpa.JPAProducer;
 import org.odata4j.producer.resources.DefaultODataProducerProvider;
 import org.odata4j.producer.server.ODataServer;
 import org.odata4j.test.integration.AbstractRuntimeTest;
+import org.odata4j.test.integration.UriProvider;
 
 @Ignore
 public class NorthwindJpaProducerTest extends AbstractRuntimeTest {
@@ -22,7 +23,7 @@ public class NorthwindJpaProducerTest extends AbstractRuntimeTest {
     this.utils = new NorthwindTestUtils(this.rtFacade);
   }
 
-  protected static final String endpointUri = "http://localhost:8810/northwind/Northwind.svc/";
+  protected static final String endpointUri = UriProvider.getEndpointUri("/northwind/Northwind.svc/");
 
   protected EntityManagerFactory emf;
   protected ODataServer server;

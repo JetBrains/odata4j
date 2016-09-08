@@ -38,6 +38,7 @@ import org.odata4j.producer.resources.DefaultODataProducerProvider;
 import org.odata4j.producer.server.ODataServer;
 import org.odata4j.stax2.util.StaxUtil;
 import org.odata4j.test.integration.AbstractRuntimeTest;
+import org.odata4j.test.integration.UriProvider;
 import org.odata4j.test.integration.producer.jpa.northwind.NorthwindTestUtils;
 import org.xml.sax.SAXException;
 
@@ -98,7 +99,7 @@ public class EdmxFormatWriterTest extends AbstractRuntimeTest implements EdmDeco
     // for example, Documentation is always the first sub-element.
   }
 
-  public static final String endpointUri = "http://localhost:8887/flights.svc/";
+  public static final String endpointUri = UriProvider.getEndpointUri("/flights.svc/");
 
   private EdmDataServices buildModel() {
 

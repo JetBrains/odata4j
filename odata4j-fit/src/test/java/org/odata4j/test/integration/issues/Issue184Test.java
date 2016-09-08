@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.odata4j.producer.resources.DefaultODataProducerProvider;
 import org.odata4j.producer.server.ODataServer;
 import org.odata4j.test.integration.AbstractRuntimeTest;
+import org.odata4j.test.integration.UriProvider;
 
 public class Issue184Test extends AbstractRuntimeTest {
 
@@ -24,7 +25,7 @@ public class Issue184Test extends AbstractRuntimeTest {
 
   private ODataServer server;
 
-  private final static String endpointUri = "http://localhost:8810/Issue184.svc/";
+  private final static String endpointUri = UriProvider.getEndpointUri("/Issue184.svc/");
 
   private Issue184MockProducer mockProducer;
 

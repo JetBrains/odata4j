@@ -15,6 +15,7 @@ import org.odata4j.producer.inmemory.InMemoryProducer;
 import org.odata4j.producer.resources.DefaultODataProducerProvider;
 import org.odata4j.producer.server.ODataServer;
 import org.odata4j.test.integration.AbstractRuntimeTest;
+import org.odata4j.test.integration.UriProvider;
 
 public class Issue13Test extends AbstractRuntimeTest {
 
@@ -25,7 +26,7 @@ public class Issue13Test extends AbstractRuntimeTest {
   @Test
   public void issue13() throws Exception {
 
-    String endpointUri = "http://localhost:8813/Issue13.svc/";
+    String endpointUri = UriProvider.getEndpointUri("/Issue13.svc/");
 
     final OEntityKey[] lastEntityKey = new OEntityKey[1];
     InMemoryProducer producer = new InMemoryProducer("Issue13") {

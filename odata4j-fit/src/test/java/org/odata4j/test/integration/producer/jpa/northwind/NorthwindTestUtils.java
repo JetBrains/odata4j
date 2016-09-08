@@ -9,6 +9,9 @@ import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -82,6 +85,13 @@ public class NorthwindTestUtils {
 
       result = URLDecoder.decode(result, Charsets.Upper.UTF_8);
 
+      String autority;
+      try {
+        autority = new URI(endpointUri).getAuthority();
+      } catch (URISyntaxException e) {
+        throw new RuntimeException(e);
+      }
+
       // different naming
       result = result.replace(
           "NorthwindModel.Categories",
@@ -98,8 +108,9 @@ public class NorthwindTestUtils {
       result = result.replace(
           "NorthwindModel.Order_Details",
           "NorthwindModel.Order_Detail");
+
       result = result.replace(
-          "http://localhost:8810/northwind",
+          String.format("http://%s/northwind", autority),
           "http://services.odata.org/northwind");
       Matcher matcher = SKIP_TOKEN.matcher(result);
       if (matcher.find()) {

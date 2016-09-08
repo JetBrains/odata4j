@@ -8,6 +8,7 @@ import org.odata4j.consumer.ODataConsumer;
 import org.odata4j.core.OEntity;
 import org.odata4j.core.OEntityKey;
 import org.odata4j.core.OProperties;
+import org.odata4j.test.integration.UriProvider;
 
 public class CompositeKeyEntityTest extends NorthwindJpaProducerTest {
 
@@ -15,7 +16,7 @@ public class CompositeKeyEntityTest extends NorthwindJpaProducerTest {
     super(type);
   }
 
-  protected static final String endpointUri = "http://localhost:8810/northwind/Northwind.svc/";
+  protected static final String endpointUri = UriProvider.getEndpointUri("/northwind/Northwind.svc/");
 
   @Before
   public void setUpClass() throws Exception {

@@ -15,6 +15,7 @@ import org.odata4j.producer.inmemory.InMemoryProducer;
 import org.odata4j.producer.resources.DefaultODataProducerProvider;
 import org.odata4j.producer.server.ODataServer;
 import org.odata4j.test.integration.AbstractRuntimeTest;
+import org.odata4j.test.integration.UriProvider;
 
 public class DateTimeFormatTest extends AbstractRuntimeTest {
 
@@ -24,7 +25,7 @@ public class DateTimeFormatTest extends AbstractRuntimeTest {
 
   @Test
   public void testDateTimeRoundtrip() throws Exception {
-    String endpointUri = "http://localhost:8810/DateTimeFormatTest.svc/";
+    String endpointUri = UriProvider.getEndpointUri("/DateTimeFormatTest.svc/");
 
     final long now = 1292865839424L;
 

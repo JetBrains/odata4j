@@ -17,6 +17,7 @@ import org.odata4j.core.ODataConstants.Charsets;
 import org.odata4j.core.Throwables;
 import org.odata4j.producer.server.ODataServer;
 import org.odata4j.test.integration.AbstractRuntimeTest;
+import org.odata4j.test.integration.UriProvider;
 
 @Ignore
 public class AirlineJPAProducerBaseTest extends AbstractRuntimeTest {
@@ -25,8 +26,7 @@ public class AirlineJPAProducerBaseTest extends AbstractRuntimeTest {
     super(type);
   }
 
-  protected static final String endpointUri =
-      "http://localhost:8810/airline/Airline.svc/";
+  protected static final String endpointUri = UriProvider.getEndpointUri("/airline/Airline.svc/");
 
   protected static EntityManagerFactory emf;
   protected static ODataServer server;

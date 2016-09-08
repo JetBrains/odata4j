@@ -44,6 +44,7 @@ import org.odata4j.producer.resources.DefaultODataProducerProvider;
 import org.odata4j.producer.server.ODataServer;
 import org.odata4j.test.integration.AbstractRuntimeTest;
 import org.odata4j.test.integration.ResponseData;
+import org.odata4j.test.integration.UriProvider;
 import org.xml.sax.SAXException;
 
 @RunWith(JUnit4.class)
@@ -67,7 +68,7 @@ public class FunctionImportTest extends AbstractRuntimeTest {
 
   private ODataServer server;
 
-  private final static String endpointUri = "http://localhost:8810/FunctionImportScenario.svc/";
+  private final static String endpointUri = UriProvider.getEndpointUri("/FunctionImportScenario.svc/");
 
   private FunctionImportProducerMock mockProducer;
 
