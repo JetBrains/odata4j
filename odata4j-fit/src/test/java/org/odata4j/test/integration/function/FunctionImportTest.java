@@ -947,7 +947,7 @@ public class FunctionImportTest extends AbstractRuntimeTest {
      */
 
     for (FormatType format : FunctionImportTest.formats) {
-      String uri = endpointUri + MetadataUtil.TEST_FUNCTION_RETURN_STRING_POST + "/$batch" + "?" + this.formatQuery(format);
+      String uri = endpointUri + "$batch" + "?" + this.formatQuery(format);
 
       Hashtable<String, Object> header = new Hashtable<String, Object>();
       header.put("content-type", new MediaType("multipart", "mixed"));
