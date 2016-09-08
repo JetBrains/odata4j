@@ -68,7 +68,7 @@ public class FunctionImportTest extends AbstractRuntimeTest {
 
   private ODataServer server;
 
-  private final static String endpointUri = UriProvider.getEndpointUri("/FunctionImportScenario.svc/");
+  private static String endpointUri;
 
   private FunctionImportProducerMock mockProducer;
 
@@ -150,6 +150,7 @@ public class FunctionImportTest extends AbstractRuntimeTest {
     this.mockProducer = new FunctionImportProducerMock();
 
     DefaultODataProducerProvider.setInstance(this.mockProducer);
+    FunctionImportTest.endpointUri = UriProvider.getEndpointUri("/FunctionImportScenario.svc/");
     this.server = this.rtFacade.startODataServer(FunctionImportTest.endpointUri);
   }
 
