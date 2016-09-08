@@ -12,6 +12,7 @@ import org.odata4j.producer.inmemory.InMemoryProducer;
 import org.odata4j.producer.resources.DefaultODataProducerProvider;
 import org.odata4j.producer.server.ODataServer;
 import org.odata4j.test.integration.AbstractRuntimeTest;
+import org.odata4j.test.integration.UriProvider;
 
 public class ScenarioTopCountTest extends AbstractRuntimeTest {
 
@@ -21,7 +22,7 @@ public class ScenarioTopCountTest extends AbstractRuntimeTest {
 
   @Test
   public void testScenario() throws Exception {
-    String uri = "http://localhost:18888/TestService.svc/";
+    String uri = UriProvider.getEndpointUri("/TestService.svc/");
     InMemoryProducer producer = new InMemoryProducer("ScenarioTest");
     DefaultODataProducerProvider.setInstance(producer);
     ODataServer server = this.rtFacade.startODataServer(uri);

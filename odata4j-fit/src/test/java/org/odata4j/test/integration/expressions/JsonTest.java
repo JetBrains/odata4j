@@ -74,7 +74,9 @@ public class JsonTest extends AbstractRuntimeTest {
       Enumerable<OEntity> es = consumer.getEntities("Pojo").nav((int) 1, "OnNoticeEntities").execute();
       assertOnNoticeEntities(es.toList());
     } finally {
-      server.stop();
+      if (server != null) {
+        server.stop();
+      }
     }
 
   }
