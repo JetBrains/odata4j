@@ -14,11 +14,19 @@ import org.odata4j.test.integration.TestInMemoryProducers;
 
 public class SmokeTest extends AbstractJettyHttpClientTest {
 
-  private static final String META_DATA_URL = BASE_URI + "$metadata";
-  private static final String FEED_URL = BASE_URI + TestInMemoryProducers.SIMPLE_ENTITY_SET_NAME;
+  private static String META_DATA_URL;
+  private static String FEED_URL;
 
   public SmokeTest(RuntimeFacadeType type) {
     super(type);
+  }
+
+  @Override
+  public void setup() throws Exception {
+    super.setup();
+
+    META_DATA_URL = BASE_URI + "$metadata";
+    FEED_URL = BASE_URI + TestInMemoryProducers.SIMPLE_ENTITY_SET_NAME;
   }
 
   @Override

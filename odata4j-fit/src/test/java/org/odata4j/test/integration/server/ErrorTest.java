@@ -26,12 +26,18 @@ import org.odata4j.test.integration.TestInMemoryProducers;
 
 public class ErrorTest extends AbstractJettyHttpClientTest {
 
-  private static final String FEED_URL = BASE_URI + TestInMemoryProducers.SIMPLE_ENTITY_SET_NAME;
+  private static String FEED_URL;
 
   private InMemoryProducer producerSpy;
 
   public ErrorTest(RuntimeFacadeType type) {
     super(type);
+  }
+
+  @Override
+  public void setup() throws Exception {
+    super.setup();
+    FEED_URL = BASE_URI + TestInMemoryProducers.SIMPLE_ENTITY_SET_NAME;
   }
 
   @Override

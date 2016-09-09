@@ -12,7 +12,7 @@ import org.odata4j.producer.server.ODataServer;
  */
 public abstract class AbstractIntegrationTest extends AbstractRuntimeTest {
 
-  protected static final String BASE_URI = "http://localhost:8888/test.svc/";
+  protected static String BASE_URI;
 
   /**
    * The ODataServer instance.
@@ -25,6 +25,7 @@ public abstract class AbstractIntegrationTest extends AbstractRuntimeTest {
 
   @Before
   public void setup() throws Exception {
+    BASE_URI = UriProvider.getEndpointUri("/test.svc/");
     startODataServer();
     registerODataProducer();
     startClient();
