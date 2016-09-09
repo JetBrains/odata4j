@@ -61,7 +61,14 @@ public class StaxXMLFactoryProvider2 extends XMLFactoryProvider2 {
 
   @Override
   public XMLInputFactory2 newXMLInputFactory2() {
-    return new StaxXMLInputFactory2(XMLInputFactory.newInstance());
+    XMLInputFactory factory = XMLInputFactory.newInstance();
+
+    factory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, true);
+    factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+    factory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, false);
+    factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+
+    return new StaxXMLInputFactory2(factory);
   }
 
   private static class StaxXMLInputFactory2 implements XMLInputFactory2 {
