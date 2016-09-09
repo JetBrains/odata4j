@@ -13,7 +13,6 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.Providers;
 import java.net.URI;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Path("{first: \\$}batch")
@@ -33,19 +32,10 @@ public class BatchRequestResource extends BaseResource {
       @QueryParam("$callback") String callback,
       List<BatchBodyPart> bodyParts) throws Exception {
 
-    log("processBatch", "bodyParts.size", bodyParts.size());
+    LoggingUtils.log(log, "processBatch", "bodyParts.size", bodyParts.size());
 
-    String changesetBoundary = "changesetresponse_"
-        + Guid.randomGuid().toString();
     String batchBoundary = "batchresponse_" + Guid.randomGuid().toString();
-    StringBuilder batchResponse = new StringBuilder("\n--");
-    batchResponse.append(batchBoundary);
-
-    batchResponse
-        .append("\n").append(ODataConstants.Headers.CONTENT_TYPE).append(": multipart/mixed; boundary=")
-        .append(changesetBoundary);
-
-    batchResponse.append('\n');
+    StringBuilder batchResponse = new StringBuilder();
 
     ODataProducer producer = getODataProducer(providers);
 
@@ -98,39 +88,19 @@ public class BatchRequestResource extends BaseResource {
                         parameters.getFirst("$select"));
       }
 
-      batchResponse.append("\n--").append(changesetBoundary);
-      batchResponse.append("\n").append(ODataConstants.Headers.CONTENT_TYPE).append(": application/http");
-      batchResponse.append("\nContent-Transfer-Encoding: binary\n");
+      batchResponse.append("\n--").append(batchBoundary).append("\n");
+      batchResponse.append(ODataConstants.Headers.CONTENT_TYPE).append(": application/http\n");
+      batchResponse.append("Content-Transfer-Encoding: binary\n");
 
-      batchResponse.append(ODataBatchProvider.createResponseBodyPart(
-          bodyPart,
-          response));
+      batchResponse.append(ODataBatchProvider.createResponseBodyPart(bodyPart, response));
+      batchResponse.append("--").append(batchBoundary).append("--\n");
     }
-
-    batchResponse.append("--").append(changesetBoundary).append("--\n");
-    batchResponse.append("--").append(batchBoundary).append("--\n");
 
     return Response
-        .status(Status.ACCEPTED)
-        .type(ODataBatchProvider.MULTIPART_MIXED + ";boundary="
-            + batchBoundary).header(
-            ODataConstants.Headers.DATA_SERVICE_VERSION,
-            ODataConstants.DATA_SERVICE_VERSION_HEADER)
-        .entity(batchResponse.toString()).build();
+            .status(Status.ACCEPTED)
+            .type(ODataBatchProvider.MULTIPART_MIXED + ";boundary=" + batchBoundary)
+            .header(ODataConstants.Headers.DATA_SERVICE_VERSION,
+                    ODataConstants.DATA_SERVICE_VERSION_HEADER)
+            .entity(batchResponse.toString()).build();
   }
-
-  private static void log(String operation, Object... namedArgs) {
-    if (!log.isLoggable(Level.FINE))
-      return;
-    StringBuilder sb = new StringBuilder(operation).append('(');
-    if (namedArgs != null && namedArgs.length > 0) {
-      for (int i = 0; i < namedArgs.length; i += 2) {
-        if (i > 0)
-          sb.append(',');
-        sb.append(namedArgs[i]).append('=').append(namedArgs[i + 1]);
-      }
-    }
-    log.fine(sb.append(')').toString());
-  }
-
 }

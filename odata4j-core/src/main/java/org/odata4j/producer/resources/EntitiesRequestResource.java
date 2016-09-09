@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 // ignoreParens below is there to trim the parentheses from the entity set name when they are present - e.g. '/my.svc/Users()'.
@@ -44,7 +43,7 @@ public class EntitiesRequestResource extends BaseResource {
     if (entitySetName.equals("mex") && httpHeaders.getMediaType() != null && httpHeaders.getMediaType().toString().startsWith("application/soap+xml"))
       throw new UnsupportedMediaTypeException("SOAP mex requests are not supported");
 
-    log("createEntity", "entitySetName", entitySetName);
+    LoggingUtils.log(log, "createEntity", "entitySetName", entitySetName);
 
     ODataProducer producer = getODataProducer(providers);
 
@@ -98,7 +97,7 @@ public class EntitiesRequestResource extends BaseResource {
           InputStream payload,
           ODataContext odataContext) throws Exception {
 
-    log("createMediaLinkEntity", "entitySetName", entitySet.getName());
+    LoggingUtils.log(log, "createMediaLinkEntity", "entitySetName", entitySet.getName());
 
     OEntity mle = super.createOrUpdateMediaLinkEntry(httpHeaders, uriInfo, entitySet, producer, payload, null, odataContext);
 
@@ -164,7 +163,7 @@ public class EntitiesRequestResource extends BaseResource {
           @QueryParam("$select") String select)
           throws Exception {
 
-    log("getEntities",
+    LoggingUtils.log(log, "getEntities",
             "entitySetName", entitySetName,
             "inlineCount", inlineCount,
             "top", top,
@@ -195,7 +194,7 @@ public class EntitiesRequestResource extends BaseResource {
           InputStream payload) throws Exception {
 
     Response response;
-    log("functionCallPut", "function", functionName);
+    LoggingUtils.log(log, "functionCallPut", "function", functionName);
 
     ODataProducer producer = getODataProducer(providers);
 
@@ -226,7 +225,7 @@ public class EntitiesRequestResource extends BaseResource {
       InputStream payload) throws Exception {
 
     Response response;
-    log("functionCallDelete", "function", functionName);
+    LoggingUtils.log(log, "functionCallDelete", "function", functionName);
 
     ODataProducer producer = getODataProducer(providers);
 
@@ -268,7 +267,7 @@ public class EntitiesRequestResource extends BaseResource {
       @QueryParam("$expand") String expand,
       @QueryParam("$select") String select) throws Exception {
 
-    log("getEntitiesCount",
+    LoggingUtils.log(log, "getEntitiesCount",
         "entitySetName", entitySetName,
         "inlineCount", inlineCount,
         "top", top,
@@ -383,19 +382,4 @@ public class EntitiesRequestResource extends BaseResource {
     }
     return response;
   }
-
-  private static void log(String operation, Object... namedArgs) {
-    if (!log.isLoggable(Level.FINE))
-      return;
-    StringBuilder sb = new StringBuilder(operation).append('(');
-    if (namedArgs != null && namedArgs.length > 0) {
-      for (int i = 0; i < namedArgs.length; i += 2) {
-        if (i > 0)
-          sb.append(',');
-        sb.append(namedArgs[i]).append('=').append(namedArgs[i + 1]);
-      }
-    }
-    log.fine(sb.append(')').toString());
-  }
-
 }

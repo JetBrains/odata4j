@@ -957,8 +957,8 @@ public class FunctionImportTest extends AbstractRuntimeTest {
       String resource = responseData.getEntity();
 
       assertNotNull(resource);
-      assertTrue(resource.contains("batchresponse"));
       assertEquals(format.toString(), 202, responseData.getStatusCode());
+      assertEquals(resource, "");
     }
   }
 }
