@@ -42,6 +42,7 @@ public class InMemoryProducer implements ODataProducer {
   private final EdmDecorator decorator;
   private final MetadataProducer metadataProducer;
   private final InMemoryTypeMapping typeMapping;
+  protected InMemoryEvaluation evaluation = new InMemoryEvaluationImpl();
 
   private boolean includeNullPropertyValues = true;
   private final boolean flattenEdm;
@@ -442,10 +443,10 @@ public class InMemoryProducer implements ODataProducer {
     }
   }
 
-  private static Predicate1<Object> filterToPredicate(final BoolCommonExpression filter, final PropertyModel properties) {
+  private Predicate1<Object> filterToPredicate(final BoolCommonExpression filter, final PropertyModel properties) {
     return new Predicate1<Object>() {
       public boolean apply(Object input) {
-        return InMemoryEvaluation.evaluate(filter, input, properties);
+        return evaluation.evaluate(filter, input, properties);
       }
     };
   }
@@ -652,8 +653,8 @@ public class InMemoryProducer implements ODataProducer {
       iter = iter.orderBy(new Comparator<Object>() {
         @SuppressWarnings({ "unchecked", "rawtypes" })
         public int compare(Object o1, Object o2) {
-          Comparable lhs = (Comparable) InMemoryEvaluation.evaluate(orderBy.getExpression(), o1, properties);
-          Comparable rhs = (Comparable) InMemoryEvaluation.evaluate(orderBy.getExpression(), o2, properties);
+          Comparable lhs = (Comparable) evaluation.evaluate(orderBy.getExpression(), o1, properties);
+          Comparable rhs = (Comparable) evaluation.evaluate(orderBy.getExpression(), o2, properties);
           return (orderBy.getDirection() == Direction.ASCENDING ? 1 : -1) * lhs.compareTo(rhs);
         }
       });
