@@ -93,8 +93,9 @@ public class BatchRequestResource extends BaseResource {
       batchResponse.append("Content-Transfer-Encoding: binary\n");
 
       batchResponse.append(ODataBatchProvider.createResponseBodyPart(bodyPart, response));
-      batchResponse.append("--").append(batchBoundary).append("--\n");
     }
+
+    batchResponse.append("--").append(batchBoundary).append("--\n");
 
     return Response
             .status(Status.ACCEPTED)
