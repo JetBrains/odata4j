@@ -959,34 +959,43 @@ public class InMemoryProducer implements ODataProducer {
 
     final Object rt = Enumerable.create(iter).firstOrNull(new Predicate1<Object>() {
       public boolean apply(Object input) {
-        HashMap<String, Object> idObjectMap = ei.id.apply(input);
+        final Map<String, Object> idObjectMap = ei.id.apply(input);
+        OEntityKey entityKey = rc.getEntityKey();
 
-        if (keyList.length == 1) {
-          Object idValue = rc.getEntityKey().asSingleValue();
-          return idObjectMap.get(keyList[0]).equals(idValue);
-        } else if (keyList.length > 1) {
-          for (String key : keyList) {
-            Object curValue = null;
-            Iterator<OProperty<?>> keyProps = rc.getEntityKey().asComplexProperties().iterator();
-            while (keyProps.hasNext()) {
-              OProperty<?> keyProp = keyProps.next();
-              if (keyProp.getName().equalsIgnoreCase(key)) {
-                curValue = keyProp.getValue();
-              }
-            }
-            if (curValue == null) {
-              return false;
-            } else if (!idObjectMap.get(key).equals(curValue)) {
-              return false;
-            }
-          }
-          return true;
-        } else {
-          return false;
-        }
+        return compareKey(keyList, idObjectMap, entityKey);
       }
     });
     return rt;
+  }
+
+  private boolean compareKey(String[] keyList, final Map<String, Object> idObjectMap, final OEntityKey entityKey) {
+    if (keyList.length == 1) {
+      String key = keyList[0];
+      Object idValue = entityKey.asSingleValue();
+      return comparePropertyValue(key, idObjectMap.get(key), idValue);
+    } else if (keyList.length > 1) {
+      for (String key : keyList) {
+        Object curValue = null;
+        for (OProperty<?> keyProp : entityKey.asComplexProperties()) {
+          if (keyProp.getName().equalsIgnoreCase(key)) {
+            curValue = keyProp.getValue();
+          }
+        }
+
+        if (curValue == null) {
+          return false;
+        } else if (!comparePropertyValue(key, idObjectMap.get(key), curValue)) {
+          return false;
+        }
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  protected boolean comparePropertyValue(String name, Object v1, Object v2) {
+    return v1.equals(v2);
   }
 
   private enum TriggerType {
